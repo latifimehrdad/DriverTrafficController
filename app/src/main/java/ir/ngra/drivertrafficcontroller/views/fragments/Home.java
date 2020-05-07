@@ -31,10 +31,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import butterknife.ButterKnife;
 import ir.ngra.drivertrafficcontroller.R;
 import ir.ngra.drivertrafficcontroller.databinding.FragmentHomeBinding;
+import ir.ngra.drivertrafficcontroller.utility.BearingToNorthProvider;
 import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
 import ir.ngra.drivertrafficcontroller.viewmodels.fragments.VM_Home;
 
-public class Home extends Fragment implements OnMapReadyCallback {
+public class Home extends Fragment implements OnMapReadyCallback, BearingToNorthProvider.ChangeEventListener {
 
     private View view;
     private Context context;
@@ -46,6 +47,9 @@ public class Home extends Fragment implements OnMapReadyCallback {
     private LatLng OldLatLng;
     private MehrdadLatifiMap mehrdadLatifiMap = new MehrdadLatifiMap();
     private Marker marker;
+
+    private BearingToNorthProvider mBearingProvider;
+
 
     public Home() {//_______________________________________________________________________________ Home
     }//_____________________________________________________________________________________________ Home
@@ -85,13 +89,15 @@ public class Home extends Fragment implements OnMapReadyCallback {
         //mMap.getUiSettings().setRotateGesturesEnabled(false);
         mMap.getUiSettings().setTiltGesturesEnabled(false);
         mMap.setMyLocationEnabled(false);
-        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setZoomControlsEnabled(false);
         mMap.getUiSettings().setMyLocationButtonEnabled(false);
         mMap.getUiSettings().setMapToolbarEnabled(false);
         mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
             @Override
             public void onMapLoaded() {
-                GetCurrentLocationListener();
+                mBearingProvider = new BearingToNorthProvider(context);
+                mBearingProvider.setChangeEventListener(Home.this);
+                mBearingProvider.start();
             }
         });
 
@@ -114,54 +120,99 @@ public class Home extends Fragment implements OnMapReadyCallback {
 
     }//_____________________________________________________________________________________________ GetCurrentLocationListener
 
+    @Override
+    public void onCurrentLocationChange(Location loc) {
+        Log.i("meri", ""+ loc.getLatitude() + " - " + loc.getLongitude());
+        CurrentLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
+        if (marker == null)
+            marker = mMap.addMarker(new MarkerOptions()
+                    .position(CurrentLatLng)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.maparrow)));
+        marker.setPosition(CurrentLatLng);
+        float zoom = (float) 18;
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
+    }
 
-    private class MyLocationListener implements LocationListener {//_________________________________ Start MyLocationListener
+    @Override
+    public void onBearingChanged(double bearing) {
+        updateCameraBearing(mMap,bearing);
+    }
+
+
+    private class MyLocationListener implements LocationListener {//________________________________ MyLocationListener
 
         public void onLocationChanged(final Location loc) {
 
-
-            if (OldLatLng == null) {
-                OldLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
-
-                if (marker == null)
-                    marker = mMap.addMarker(new MarkerOptions()
-                            .position(OldLatLng)
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.maparrow)));
-
-                marker.setPosition(OldLatLng);
-                float zoom = (float) 18;
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(OldLatLng, zoom));
-
-                float bearing = (float) mehrdadLatifiMap.GetBearing(OldLatLng, OldLatLng);
-                CameraPosition oldPos = mMap.getCameraPosition();
-                CameraPosition pos = CameraPosition.builder(oldPos).bearing(bearing).build();
-                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
-            }
-            else {
-                    OldLatLng = CurrentLatLng;
-            }
-
+            Log.i("meri", "loc : " + loc.getProvider());
+            if (loc.getProvider().equalsIgnoreCase("network"))
+                return;
 
             CurrentLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
 
+            if (marker == null)
+                marker = mMap.addMarker(new MarkerOptions()
+                        .position(CurrentLatLng)
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.maparrow)));
+
+            marker.setPosition(CurrentLatLng);
+            float zoom = (float) 18;
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
+            Log.i("meri", "Bearing : " + loc.getBearing());
+            updateCameraBearing(mMap,loc.getBearing());
 
 
-            if (OldLatLng.latitude != CurrentLatLng.latitude || OldLatLng.longitude != CurrentLatLng.longitude) {
+//            if (OldLatLng == null) {
+//                OldLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
+//
+//                marker.setPosition(OldLatLng);
+//                float zoom = (float) 18;
+//                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(OldLatLng, zoom));
+//
+//                float bearing = (float) mehrdadLatifiMap.GetBearing(OldLatLng, OldLatLng);
+//                CameraPosition oldPos = mMap.getCameraPosition();
+//                CameraPosition pos = CameraPosition.builder(oldPos).bearing(bearing).build();
+//                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
+//            }
+//            else {
+//                    OldLatLng = CurrentLatLng;
+//            }
+//
+//
+//            CurrentLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
+//
+//            Location locationA = new Location("point A");
+//
+//            locationA.setLatitude(OldLatLng.latitude);
+//            locationA.setLongitude(OldLatLng.longitude);
+//
+//            Location locationB = new Location("point B");
+//
+//            locationB.setLatitude(CurrentLatLng.latitude);
+//            locationB.setLongitude(CurrentLatLng.longitude);
+//            float distance = locationA.distanceTo(locationB);
+//            Log.i("meri","distance : " + distance);
+//
+//
+//
+//
+//            if (distance > 1) {
+//
+//                CameraPosition currentposition=mMap.getCameraPosition();
+//                float currentBearing = currentposition.bearing;
+//
+//
+//
+//                Log.i("meri", "Old bearing : " + OldLatLng);
+//                Log.i("meri", "New bearing : " + CurrentLatLng);
 
-                CameraPosition currentposition=mMap.getCameraPosition();
-                float currentBearing = currentposition.bearing;
-                Log.i("meri", "Old bearing : " + OldLatLng);
 
-                marker.setPosition(CurrentLatLng);
-                float zoom = (float) 18;
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
 
-                float bearing = (float) mehrdadLatifiMap.GetBearing(OldLatLng, CurrentLatLng);
-                Log.i("meri", "New bearing : " + OldLatLng);
-                CameraPosition oldPos = mMap.getCameraPosition();
-                CameraPosition pos = CameraPosition.builder(oldPos).bearing(bearing).build();
-                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
-            }
+//                float bearing = (float) mehrdadLatifiMap.GetBearing(OldLatLng, CurrentLatLng);
+
+//                CameraPosition oldPos = mMap.getCameraPosition();
+//                CameraPosition pos = CameraPosition.builder(oldPos).bearing(bearing).build();
+//                mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
+//            }
 
 //            if (loc.getProvider().equalsIgnoreCase("gps"))
 //                GPSLocation = loc;
@@ -182,7 +233,21 @@ public class Home extends Fragment implements OnMapReadyCallback {
         public void onProviderEnabled(String provider) {
 
         }
-    }//_____________________________________________________________________________________________ End MyLocationListener
+    }//_____________________________________________________________________________________________ MyLocationListener
+
+
+
+    private void updateCameraBearing(GoogleMap googleMap, double bearing) {//________________________ updateCameraBearing
+        if ( googleMap == null) return;
+        CameraPosition camPos = CameraPosition
+                .builder(
+                        googleMap.getCameraPosition() // current Camera
+                )
+                .bearing((float) bearing)
+                .build();
+        googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(camPos));
+    }//_____________________________________________________________________________________________ updateCameraBearing
+
 
 
     @Override
