@@ -1,4 +1,18 @@
 <resources>
     <string name="app_name">DriverTrafficController</string>
     <string name="google_maps_key">AIzaSyABztsjXU0e-Y4gFfNqUGEKH6g0nmbLq2I</string>
+    <string name="VerifyAccount">تایید حساب کاربری</string>
+    <string name="VerifyCode">"لطفا 6 رقم کد فعال سازی  \n را وارد نمایید"</string>
+    <string name="ElapsedTimeGetSMS">زمان باقی مانده\n جهت دریافت پیامک</string>
+    <string name="PhoneNumber">شماره موبایل</string>
+    <string name="Password">رمز ورود</string>
+    <string name="Login">ورود</string>
+    <string name="EmptyPhoneNumber">شماره موبایل را بصورت صحیح وارد نمایید</string>
+    <string name="Ignore">بستن</string>
+    <string name="PleaseWait">شکیبا باشید ...</string>
+    <string name="LoginWarning">قبل از ورود به نرم افزار باید شماره موبایل خود را به مسئول اداری مربوطه اعلام بفرمایید.</string>
+    <string name="onFailure">ارتباط با مرکز برقرار نشد</string>
+    <string name="Cancel">انصراف</string>
+    <string name="ReTryGetSMS">دریافت مجدد\n پیامک</string>
+
 </resources>

@@ -51,7 +51,7 @@ public class Home extends Fragment implements OnMapReadyCallback, BearingToNorth
     private GoogleMap mMap;
     private LatLng CurrentLatLng;
     public static boolean MapMove = false;
-    private Marker marker;
+//    private Marker marker;
     private BearingToNorthProvider mBearingProvider;
     private double OldBearing = 0;
     private double NewBearing = 0;
@@ -153,14 +153,18 @@ public class Home extends Fragment implements OnMapReadyCallback, BearingToNorth
             zoom = mMap.getCameraPosition().zoom;
         } else {
             zoom = (float) 18.5;
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
         }
 
-        if (marker == null)
-            marker = mMap.addMarker(new MarkerOptions()
-                    .position(CurrentLatLng)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.green_arrow)));
-        marker.setPosition(CurrentLatLng);
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
+//        if (marker == null) {
+//            marker = mMap.addMarker(new MarkerOptions()
+//                    .position(CurrentLatLng)
+//                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.green_arrow)));
+//            marker.setPosition(CurrentLatLng);
+//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
+//        } else {
+//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
+//        }
     }
 
     @Override

@@ -20,6 +20,13 @@
             class="ir.ngra.drivertrafficcontroller.utility.MySupportMapFragment"/>
 
 
+        <ImageView
+            android:layout_width="@dimen/_25sdp"
+            android:layout_height="@dimen/_25sdp"
+            android:src="@drawable/green_arrow"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true"/>
+
         <Button
             android:id="@+id/BtnMove"
             android:layout_width="wrap_content"
