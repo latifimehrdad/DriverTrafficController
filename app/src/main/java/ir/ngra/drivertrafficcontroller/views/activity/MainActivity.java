@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
 
         int permissionLocation = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
         int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE);
+        int permissionWrite = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
         List<String> listPermissionsNeeded = new ArrayList<>();
 
@@ -56,7 +57,8 @@ public class MainActivity extends AppCompatActivity {
         if (permissionCheck != PackageManager.PERMISSION_GRANTED)
             listPermissionsNeeded.add(Manifest.permission.READ_PHONE_STATE);
 
-
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED)
+            listPermissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
         if (!listPermissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this,

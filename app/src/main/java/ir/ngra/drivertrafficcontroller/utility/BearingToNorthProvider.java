@@ -13,6 +13,8 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.google.android.gms.maps.model.LatLng;
+
 import ir.ngra.drivertrafficcontroller.utility.polyutil.AverageAngle;
 
 /**
@@ -112,6 +114,7 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
      */
     public BearingToNorthProvider(Context context, int smoothing, double minDiffForEvent, int throttleTime)
     {
+
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         mSensorAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
@@ -143,7 +146,7 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
         mSensorManager.registerListener(this, mSensorAccelerometer, SensorManager.SENSOR_DELAY_UI);
         mSensorManager.registerListener(this, mSensorMagneticField, SensorManager.SENSOR_DELAY_UI);
         mLocationManager = (LocationManager) Mcontext.getSystemService(Mcontext.LOCATION_SERVICE);
-        //mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 1, this);
+        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 1, this);
         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
 
 //        for (final String provider : mLocationManager.getProviders(true)) {
@@ -221,6 +224,28 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
             mAzimuth = Math.toDegrees(mAzimuthRadians.getAverage());
         }
 
+//        if (event.sensor == this.accelerometer) {
+//            System.arraycopy(event.values, 0, this.lastAccelerometer, 0, event.values.length);
+//            this.lastAccelerometerSet = true;
+//        } else if (event.sensor == this.magnetometer) {
+//            System.arraycopy(event.values, 0, this.lastMagnetometer, 0, event.values.length);
+//            this.lastMagnetometerSet = true;
+//        }
+//
+//        if (this.lastAccelerometerSet && this.lastAccelerometerSet) {
+//            SensorManager.getRotationMatrix(this.rotationMatrix,null, this.lastAccelerometer, this.lastMagnetometer);
+//            SensorManager.getOrientation(this.rotationMatrix, this.orientation);
+//
+//
+//            float azimuthInRadiands = this.orientation[0];
+//
+//            // this is now the heading of the phone. If you want
+//            // to rotate a view to north don´t forget that you have
+//            // to rotate by the negative value.
+//            float azimuthInDegrees = (float) Math.toDegrees(azimuthInRadiands);
+//            mChangeEventListener.onBearingChanged(azimuthInDegrees);
+//        }
+
         // update mBearing
         updateBearing();
     }
@@ -238,12 +263,12 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
         // set the new location
         if (isBetterLocation(location, previousBestLocation)) {
             previousBestLocation = location;
-            if (location.getProvider().equalsIgnoreCase("network"))
-                return;
+//            if (location.getProvider().equalsIgnoreCase("network"))
+//                return;
             mChangeEventListener.onCurrentLocationChange(location);
             this.mLocation = location;
             // update mBearing
-            //updateBearing();
+//            updateBearing();
         }
 
     }

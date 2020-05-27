@@ -65,9 +65,9 @@ public class RetrofitModule {
                 .addNetworkInterceptor(interceptor)
                 .cookieJar(javaNetCookieJar)
                 .cache(cache)
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(20, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
+                .writeTimeout(20, TimeUnit.SECONDS)
                 .build();
     }//_____________________________________________________________________________________________ End getOkHttpClient
 

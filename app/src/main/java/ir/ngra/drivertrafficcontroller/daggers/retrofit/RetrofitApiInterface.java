@@ -1,14 +1,18 @@
 package ir.ngra.drivertrafficcontroller.daggers.retrofit;
 
+import ir.ngra.drivertrafficcontroller.models.ModelGetAddress;
 import ir.ngra.drivertrafficcontroller.models.ModelLocations;
 import ir.ngra.drivertrafficcontroller.models.ModelResponcePrimery;
+import ir.ngra.drivertrafficcontroller.models.ModelRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelToken;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.Url;
 
 public interface RetrofitApiInterface {
 
@@ -72,6 +76,19 @@ public interface RetrofitApiInterface {
             @Header("Authorization") String Authorization,
             @Body ModelLocations locations
     );
+
+
+    @GET()
+    Call<ModelGetAddress> getAddress(
+            @Url String url
+    );
+
+
+    @GET()
+    Call<ModelRoute> getRoute(
+            @Url String url
+    );
+
 
 
 //    @FormUrlEncoded

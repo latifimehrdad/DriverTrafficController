@@ -14,5 +14,8 @@
     <color name="ML_ButtonClick">#910000</color>
     <color name="ML_VerifyCodeEmpty">#33062DBB</color>
     <color name="ML_VerifyCodeFull">#004DB9</color>
+    <color name="ML_BackDirection">#FFFFFF</color>
+    <color name="ML_BackDirectionStroke">#4D505050</color>
+    <color name="ML_BackDirectionCircle">#F1F0F0</color>
 
 </resources>

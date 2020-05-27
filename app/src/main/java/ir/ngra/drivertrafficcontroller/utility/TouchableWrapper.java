@@ -15,7 +15,7 @@ public class TouchableWrapper extends FrameLayout {
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
 
-        Home.MapMove = true;
+//        Home.MapMove = true;
 //        switch (event.getAction()) {
 //
 //            case MotionEvent.ACTION_DOWN:

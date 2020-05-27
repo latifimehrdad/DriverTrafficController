@@ -71,7 +71,6 @@ public class Splash extends Fragment {
             observer.dispose();
         observer = null;
         ObserverObservables();
-        Log.i("meri", "onStart");
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
