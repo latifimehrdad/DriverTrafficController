@@ -1,6 +1,7 @@
 package ir.ngra.drivertrafficcontroller.views.fragments;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,12 +16,14 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -105,13 +108,11 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     private Marker currentMarker = null;
     private LatLng pointLatLng;
     private boolean GetDirection = false;
+    private boolean OnStop = false;
 
 
     @BindView(R.id.BtnMove)
     Button BtnMove;
-
-//    @BindView(R.id.CarMarker)
-//    ImageView CarMarker;
 
     @BindView(R.id.RelativeLayoutDirection)
     RelativeLayout RelativeLayoutDirection;
@@ -153,12 +154,11 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     @Override
     public void onStart() {//_______________________________________________________________________ onStart
         super.onStart();
+        if (OnStop)
+            getActivity().onBackPressed();
+
         OSMConfig();
-
-
-//        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
-//                .findFragmentById(R.id.fpraMap);
-//        mapFragment.getMapAsync(this);
+        turnOnScreen();
         if (observer != null)
             observer.dispose();
         observer = null;
@@ -174,7 +174,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         GifViewRouter.setVisibility(View.GONE);
         BtnMove.setVisibility(View.INVISIBLE);
         currentMarker = null;
-//        CarMarker.setVisibility(View.INVISIBLE);
+
         ClickForRouting = false;
         AccessToGoneDirection = true;
         AccessToRemoveMarker = true;
@@ -275,7 +275,6 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
             public void onClick(View v) {
                 BtnMove.setVisibility(View.INVISIBLE);
                 MapMove = false;
-//                CarMarker.setVisibility(View.VISIBLE);
                 if (CurrentLatLng != null) {
                     IMapController mapController = map.getController();
                     GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
@@ -451,57 +450,6 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     }//_____________________________________________________________________________________________ End DrawRoute
 
 
-//    @Override
-//    public void onMapReady(GoogleMap googleMap) {//_________________________________________________ Start Void onMapReady
-//        mMap = googleMap;
-//        //mMap.getUiSettings().setRotateGesturesEnabled(false);
-//        mMap.getUiSettings().setTiltGesturesEnabled(false);
-//        mMap.setMyLocationEnabled(false);
-//        mMap.getUiSettings().setZoomControlsEnabled(false);
-//        mMap.getUiSettings().setMyLocationButtonEnabled(false);
-//        mMap.getUiSettings().setMapToolbarEnabled(false);
-//        mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
-//            @Override
-//            public void onMapLoaded() {
-//                mBearingProvider = new BearingToNorthProvider(context);
-//                mBearingProvider.setChangeEventListener(Home.this);
-//                mBearingProvider.start();
-//            }
-//        });
-//
-//        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-//            @Override
-//            public void onMapClick(LatLng latLng) {
-//
-//            }
-//        });
-//
-//
-//        mMap.setOnCameraMoveStartedListener(new GoogleMap.OnCameraMoveStartedListener() {
-//            @Override
-//            public void onCameraMoveStarted(int i) {
-//
-//            }
-//        });
-//
-//        mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
-//            @Override
-//            public void onCameraIdle() {
-//
-//            }
-//        });
-//
-
-//
-//        BtnDirection.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                vm_home.Direction();
-//            }
-//        });
-//
-//    }//_____________________________________________________________________________________________ End Void onMapReady
-
 
     @Override
     public void onCurrentLocationChange(Location loc) {
@@ -533,39 +481,15 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
             currentMarker.setPosition(currentPoint);
         }
 
-//        CarMarker.setVisibility(View.VISIBLE);
         IMapController mapController = map.getController();
         mapController.animateTo(currentPoint, 19.0, Long.valueOf(1000), bearing, true);
 
-
-
-//            CameraPosition camPos = CameraPosition
-//                    .builder()
-//                    .target(CurrentLatLng)
-//                    .zoom(zoom)
-//                    .bearing((float) bearing)
-//                    .build();
-//
-//            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(camPos), 1000, null);
-
-//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
-
-
-//        if (marker == null) {
-//            marker = mMap.addMarker(new MarkerOptions()
-//                    .position(CurrentLatLng)
-//                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.green_arrow)));
-//            marker.setPosition(CurrentLatLng);
-//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
-//        } else {
-//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(CurrentLatLng, zoom));
-//        }
     }
 
-    //
+
     @Override
     public void onBearingChanged(double bearing) {
-        //updateCameraBearing(mMap, bearing);
+
     }
 
 
@@ -615,4 +539,26 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         mBearingProvider.stop();
         map.onPause();
     }//_____________________________________________________________________________________________ onDestroy
+
+
+
+
+    private void turnOnScreen() {//_________________________________________________________________ Start turnOnScreen
+        getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // turn on screen
+//        PowerManager mPowerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+//        PowerManager.WakeLock mWakeLock;
+//        mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "AppName:tag");
+//        mWakeLock.acquire();
+    }//_____________________________________________________________________________________________ End turnOnScreen
+
+
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        mBearingProvider.stop();
+        map.onPause();
+        OnStop = true;
+    }
 }
