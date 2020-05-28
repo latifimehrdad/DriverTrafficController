@@ -1,22 +1,11 @@
 package ir.ngra.drivertrafficcontroller.views.fragments;
 
-import android.Manifest;
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
-import android.graphics.Matrix;
-import android.graphics.drawable.Drawable;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
+import android.graphics.Color;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -33,40 +22,28 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.ActivityCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 
 import com.cunoraz.gifview.library.GifView;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
-import org.osmdroid.tileprovider.util.SimpleRegisterReceiver;
-import org.osmdroid.tileprovider.util.StorageUtils;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polygon;
+import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -76,9 +53,11 @@ import io.reactivex.schedulers.Schedulers;
 import ir.ngra.drivertrafficcontroller.R;
 import ir.ngra.drivertrafficcontroller.daggers.retrofit.RetrofitModule;
 import ir.ngra.drivertrafficcontroller.databinding.FragmentHomeBinding;
+import ir.ngra.drivertrafficcontroller.models.ModelRoute;
+import ir.ngra.drivertrafficcontroller.models.ModelRouteIntersection;
+import ir.ngra.drivertrafficcontroller.models.ModelRouteStep;
 import ir.ngra.drivertrafficcontroller.utility.BearingToNorthProvider;
-import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
-import ir.ngra.drivertrafficcontroller.utility.TouchableWrapper;
+import ir.ngra.drivertrafficcontroller.utility.polyutil.ML_PolyUtil;
 import ir.ngra.drivertrafficcontroller.viewmodels.fragments.VM_Home;
 
 public class Home extends Fragment implements BearingToNorthProvider.ChangeEventListener {
@@ -109,6 +88,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     private LatLng pointLatLng;
     private boolean GetDirection = false;
     private boolean OnStop = false;
+    private ModelRoute routes;
 
 
     @BindView(R.id.BtnMove)
@@ -196,7 +176,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         IMapController mapController = map.getController();
         GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
         mapController.animateTo(startPoint, 8.0, Long.valueOf(1000));
-        map.setMapOrientation(bearing);
+        map.setMapOrientation(getBearing());
 
         mBearingProvider = new BearingToNorthProvider(context);
         mBearingProvider.setChangeEventListener(Home.this);
@@ -214,9 +194,9 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 MapMove = true;
-                BtnMove.setVisibility(View.VISIBLE);
+//                BtnMove.setVisibility(View.VISIBLE);
 
-                if(GetDirection)
+                if (GetDirection)
                     return false;
                 map.getOverlays().remove(currentMarker);
                 currentMarker = null;
@@ -270,27 +250,27 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         map.getOverlays().add(OverlayEvents);
 
 
-        BtnMove.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                BtnMove.setVisibility(View.INVISIBLE);
-                MapMove = false;
-                if (CurrentLatLng != null) {
-                    IMapController mapController = map.getController();
-                    GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-                    mapController.animateTo(currentPoint, 19.0, Long.valueOf(1000), bearing, true);
-                    if (currentMarker == null) {
-                        currentMarker = new Marker(map);
-                        currentMarker.setPosition(currentPoint);
-                        currentMarker.setIcon(getResources().getDrawable(R.drawable.truck_marker));
-                        currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                        map.getOverlays().add(currentMarker);
-                    } else {
-                        currentMarker.setPosition(currentPoint);
-                    }
-                }
-            }
-        });
+//        BtnMove.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+////                BtnMove.setVisibility(View.INVISIBLE);
+//                MapMove = false;
+//                if (CurrentLatLng != null) {
+//                    IMapController mapController = map.getController();
+//                    GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//                    mapController.animateTo(currentPoint, 19.0, Long.valueOf(1000), getBearing(), true);
+//                    if (currentMarker == null) {
+//                        currentMarker = new Marker(map);
+//                        currentMarker.setPosition(currentPoint);
+//                        currentMarker.setIcon(getResources().getDrawable(R.drawable.truck_marker));
+//                        currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//                        map.getOverlays().add(currentMarker);
+//                    } else {
+//                        currentMarker.setPosition(currentPoint);
+//                    }
+//                }
+//            }
+//        });
 
 
         LinearLayoutRouter.setOnClickListener(new View.OnClickListener() {
@@ -337,7 +317,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                     AccessToRemoveMarker = false;
                 }
             }
-        },200);
+        }, 200);
     }//_____________________________________________________________________________________________ RemoveMarker
 
 
@@ -385,7 +365,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                                         AccessToGoneDirectionTrue();
                                         AccessToRemoveMarker = false;
                                         GetDirection = true;
-                                        DrawRoute();
+                                        ConfigRoute();
                                         break;
                                     case "onFailure":
                                         RetrofitModule.isCancel = true;
@@ -426,16 +406,12 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     }//_____________________________________________________________________________________________ End ObserverObservable
 
 
+    private void ConfigRoute() {//__________________________________________________________________ Start Void ConfigRoute
 
-    private void DrawRoute() {//____________________________________________________________________ Start Void DrawRoute
-
-        BtnMove.setVisibility(View.INVISIBLE);
+//        BtnMove.setVisibility(View.INVISIBLE);
         MapMove = false;
-//        CarMarker.setVisibility(View.VISIBLE);
         if (CurrentLatLng != null) {
-            IMapController mapController = map.getController();
             GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-            mapController.animateTo(currentPoint, 19.0, Long.valueOf(1000), bearing, true);
             if (currentMarker == null) {
                 currentMarker = new Marker(map);
                 currentMarker.setPosition(currentPoint);
@@ -447,8 +423,55 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
             }
         }
 
-    }//_____________________________________________________________________________________________ End DrawRoute
+        routes = vm_home.getRoute();
+        ModelRouteStep startStep = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(0);
+        ModelRouteIntersection startIntersection = startStep.getIntersections().get(0);
+        GeoPoint StartPoint = new GeoPoint(startIntersection.getLocation().get(1), startIntersection.getLocation().get(0));
+        bearing = startStep.getManeuver().getBearing_after();
+        IMapController mapController = map.getController();
+        mapController.animateTo(StartPoint, 19.0, Long.valueOf(1000), getBearing(), true);
 
+        if (startStep.getIntersections().size() > 1) {
+            DrawRoutes();
+        } else {
+            DrawRoutes();
+        }
+
+
+    }//_____________________________________________________________________________________________ End ConfigRoute
+
+
+    private void DrawRoutes() {//___________________________________________________________________ DrawRoutes
+        GeoPoint StartPoint = null;
+        GeoPoint EndPoint = null;
+        int stepCount = routes.getRoutes().get(0).getLegs().get(0).getSteps().size();
+        for (int st = 0; st < stepCount; st++) {
+            ModelRouteStep step = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(st);
+            List<LatLng> latLngs = ML_PolyUtil.decode(step.getGeometry());
+            for (int i = 0; i < latLngs.size() - 1; i = i + 1) {
+                StartPoint = new GeoPoint(latLngs.get(i).latitude, latLngs.get(i).longitude);
+                EndPoint = new GeoPoint(latLngs.get(i + 1).latitude, latLngs.get(i + 1).longitude);
+                DrawPolyLine(StartPoint, EndPoint);
+            }
+
+        }
+        StartPoint = EndPoint;
+        EndPoint = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
+        DrawPolyLine(StartPoint, EndPoint);
+
+
+
+    }//_____________________________________________________________________________________________ DrawRoutes
+
+
+    private void DrawPolyLine(GeoPoint start, GeoPoint end) {
+        Polyline line = new Polyline(map);
+        line.addPoint(start);
+        line.addPoint(end);
+        line.setColor(getResources().getColor(R.color.ML_PolyLine));
+        line.setWidth(12.0f);
+        map.getOverlays().add(line);
+    }
 
 
     @Override
@@ -466,9 +489,6 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         if (MapMove)
             return;
 
-        bearing = bearing + 30;
-        if (bearing > 360)
-            bearing = bearing - 360;
 
         GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
         if (currentMarker == null) {
@@ -482,7 +502,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         }
 
         IMapController mapController = map.getController();
-        mapController.animateTo(currentPoint, 19.0, Long.valueOf(1000), bearing, true);
+        mapController.animateTo(currentPoint, 19.0, Long.valueOf(1000), getBearing(), true);
 
     }
 
@@ -541,8 +561,6 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     }//_____________________________________________________________________________________________ onDestroy
 
 
-
-
     private void turnOnScreen() {//_________________________________________________________________ Start turnOnScreen
         getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         // turn on screen
@@ -553,12 +571,16 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     }//_____________________________________________________________________________________________ End turnOnScreen
 
 
+    public float getBearing() {
+        return 360 - bearing;
+    }
 
     @Override
-    public void onStop() {
+    public void onStop() {//________________________________________________________________________ Start onStop
         super.onStop();
         mBearingProvider.stop();
         map.onPause();
         OnStop = true;
-    }
+    }//_____________________________________________________________________________________________ End onStop
+
 }

@@ -32,4 +32,40 @@ public class ModelRouteStep {
 
     @SerializedName("maneuver")
     ModelRouteManeuver maneuver;
+
+    public ArrayList<ModelRouteIntersection> getIntersections() {
+        return intersections;
+    }
+
+    public String getDriving_side() {
+        return driving_side;
+    }
+
+    public String getGeometry() {
+        return geometry;
+    }
+
+    public float getDuration() {
+        return duration;
+    }
+
+    public float getDistance() {
+        return distance;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public float getWeight() {
+        return weight;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public ModelRouteManeuver getManeuver() {
+        return maneuver;
+    }
 }

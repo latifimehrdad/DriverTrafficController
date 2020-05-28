@@ -32,6 +32,7 @@ public class VM_Home {
     private PublishSubject<String> publishSubject;
     private  ModelGetAddress address;
     private String TextAddress;
+    private ModelRoute route;
 
     public VM_Home(Context context) {//_____________________________________________________________ VM_Home
         this.context = context;
@@ -178,6 +179,7 @@ public class VM_Home {
                 .enqueue(new Callback<ModelRoute>() {
                     @Override
                     public void onResponse(Call<ModelRoute> call, Response<ModelRoute> response) {
+                        route = response.body();
                         publishSubject.onNext("GetDirection");
                     }
 
@@ -255,5 +257,9 @@ public class VM_Home {
 
     public String getTextAddress() {
         return TextAddress;
+    }
+
+    public ModelRoute getRoute() {
+        return route;
     }
 }

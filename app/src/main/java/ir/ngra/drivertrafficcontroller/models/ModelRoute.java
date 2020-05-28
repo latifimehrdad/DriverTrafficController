@@ -15,4 +15,15 @@ public class ModelRoute {
     @SerializedName("routes")
     ArrayList<ModelRouteRoute> routes;
 
+    public String getCode() {
+        return code;
+    }
+
+    public ArrayList<ModelRouteWayPoint> getWaypoints() {
+        return waypoints;
+    }
+
+    public ArrayList<ModelRouteRoute> getRoutes() {
+        return routes;
+    }
 }

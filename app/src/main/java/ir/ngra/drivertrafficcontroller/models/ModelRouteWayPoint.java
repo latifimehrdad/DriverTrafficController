@@ -15,4 +15,15 @@ public class ModelRouteWayPoint {
     @SerializedName("name")
     String name;
 
+    public String getHint() {
+        return hint;
+    }
+
+    public List<Double> getLocation() {
+        return location;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

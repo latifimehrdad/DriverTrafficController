@@ -17,5 +17,6 @@
     <color name="ML_BackDirection">#FFFFFF</color>
     <color name="ML_BackDirectionStroke">#4D505050</color>
     <color name="ML_BackDirectionCircle">#F1F0F0</color>
+    <color name="ML_PolyLine">#CC5607C6</color>
 
 </resources>

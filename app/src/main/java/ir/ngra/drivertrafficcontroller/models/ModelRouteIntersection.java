@@ -21,5 +21,23 @@ public class ModelRouteIntersection {
     @SerializedName("bearings")
     List<Integer> bearings;
 
+    public Integer getOut() {
+        return out;
+    }
 
+    public Integer getIn() {
+        return in;
+    }
+
+    public List<Boolean> getEntry() {
+        return entry;
+    }
+
+    public List<Double> getLocation() {
+        return location;
+    }
+
+    public List<Integer> getBearings() {
+        return bearings;
+    }
 }

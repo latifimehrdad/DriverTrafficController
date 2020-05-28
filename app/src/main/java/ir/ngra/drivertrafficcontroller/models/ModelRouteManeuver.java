@@ -20,4 +20,24 @@ public class ModelRouteManeuver {
 
     @SerializedName("modifier")
     String modifier;
+
+    public Integer getBearing_after() {
+        return bearing_after;
+    }
+
+    public List<Double> getLocation() {
+        return location;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public Integer getBearing_before() {
+        return bearing_before;
+    }
+
+    public String getModifier() {
+        return modifier;
+    }
 }

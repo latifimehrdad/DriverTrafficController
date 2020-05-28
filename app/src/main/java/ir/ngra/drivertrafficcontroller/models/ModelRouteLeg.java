@@ -21,4 +21,23 @@ public class ModelRouteLeg {
     @SerializedName("duration")
     float duration;
 
+    public ArrayList<ModelRouteStep> getSteps() {
+        return steps;
+    }
+
+    public float getWeight() {
+        return weight;
+    }
+
+    public float getDistance() {
+        return distance;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public float getDuration() {
+        return duration;
+    }
 }
