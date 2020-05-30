@@ -133,11 +133,27 @@
             android:textSize="@dimen/_10sdp"
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
-            android:layout_marginBottom="@dimen/_10sdp"/>
+            android:layout_marginBottom="@dimen/_50sdp"/>
 
 
 
+        <EditText
+            android:id="@+id/TextViewBearing"
+            android:layout_width="@dimen/_100sdp"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/BtnMove"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="@dimen/_10sdp"
+            />
 
+        <EditText
+            android:id="@+id/TextViewBearingbefor"
+            android:layout_width="@dimen/_100sdp"
+            android:layout_height="wrap_content"
+            android:layout_above="@id/TextViewBearing"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="@dimen/_10sdp"
+            />
 
     </RelativeLayout>
 

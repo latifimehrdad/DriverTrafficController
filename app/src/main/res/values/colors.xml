@@ -19,4 +19,19 @@
     <color name="ML_BackDirectionCircle">#F1F0F0</color>
     <color name="ML_PolyLine">#CC5607C6</color>
 
+
+    <array name="colors">
+
+        <item>#03600F</item>
+        <item>#0D80DA</item>
+        <item>#DD17F3</item>
+        <item>#EF1818</item>
+        <item>#FFF200</item>
+        <item>#09FFDA</item>
+        <item>#FF5900</item>
+        <item>#3600FD</item>
+        <item>#0AFF00</item>
+        <item>#882525</item>
+    </array>
+
 </resources>
