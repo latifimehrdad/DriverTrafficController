@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:custom="http://schemas.android.com/apk/res-auto">
+    xmlns:custom="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
     <data>
         <variable
             name="home"
@@ -15,7 +16,19 @@
         <org.osmdroid.views.MapView
             android:id="@+id/map"
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent" />
+            android:layout_height="fill_parent"
+            android:visibility="invisible"
+            />
+
+
+        <fragment
+            android:id="@+id/fpraMap"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context=".Activity.MapsActivity" />
+
+
 
 
 
@@ -135,25 +148,6 @@
             android:layout_alignParentBottom="true"
             android:layout_marginBottom="@dimen/_50sdp"/>
 
-
-
-        <EditText
-            android:id="@+id/TextViewBearing"
-            android:layout_width="@dimen/_100sdp"
-            android:layout_height="wrap_content"
-            android:layout_above="@id/BtnMove"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="@dimen/_10sdp"
-            />
-
-        <EditText
-            android:id="@+id/TextViewBearingbefor"
-            android:layout_width="@dimen/_100sdp"
-            android:layout_height="wrap_content"
-            android:layout_above="@id/TextViewBearing"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="@dimen/_10sdp"
-            />
 
     </RelativeLayout>
 

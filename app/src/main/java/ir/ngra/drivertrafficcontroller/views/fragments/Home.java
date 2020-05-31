@@ -1,5 +1,6 @@
 package ir.ngra.drivertrafficcontroller.views.fragments;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
@@ -28,6 +29,8 @@ import androidx.fragment.app.Fragment;
 import com.cunoraz.gifview.library.GifView;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 
@@ -63,12 +66,13 @@ import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
 import ir.ngra.drivertrafficcontroller.utility.polyutil.ML_PolyUtil;
 import ir.ngra.drivertrafficcontroller.viewmodels.fragments.VM_Home;
 
-public class Home extends Fragment implements BearingToNorthProvider.ChangeEventListener {
+public class Home extends Fragment implements BearingToNorthProvider.ChangeEventListener,
+        OnMapReadyCallback {
 
     private View view;
     private Context context;
     private VM_Home vm_home;
-    //    private GoogleMap mMap;
+    private GoogleMap mMap;
     private LatLng CurrentLatLng;
     private Location CurrentLocation;
     private boolean MapMove = false;
@@ -79,7 +83,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     private DisposableObserver<String> observer;
     private Integer ErrorCount = 0;
     private final double degreesPerRadian = 180.0 / Math.PI;
-    private MapView map = null;
+    //    private MapView map = null;
     AlertDialog alertDialog = null;
     private float bearing = 0;
     private float BeforeBearing = 0;
@@ -114,12 +118,6 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
 
     @BindView(R.id.GifViewRouter)
     GifView GifViewRouter;
-
-    @BindView(R.id.TextViewBearing)
-    TextView TextViewBearing;
-
-    @BindView(R.id.TextViewBearingbefor)
-    TextView TextViewBearingbefor;
 
 
     public Home() {//_______________________________________________________________________________ Home
@@ -161,10 +159,14 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
 
     private void OSMConfig() {//____________________________________________________________________ OSMConfig
 
+        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
+                .findFragmentById(R.id.fpraMap);
+        mapFragment.getMapAsync(this);
+
         RelativeLayoutDirection.setVisibility(View.GONE);
         imageViewRouter.setVisibility(View.VISIBLE);
         GifViewRouter.setVisibility(View.GONE);
-//        BtnMove.setVisibility(View.INVISIBLE);
+        BtnMove.setVisibility(View.INVISIBLE);
         currentMarker = null;
 
         ClickForRouting = false;
@@ -172,55 +174,57 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         AccessToRemoveMarker = true;
         GetDirection = false;
         LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
-        Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context));
-        map = (MapView) view.findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
-        map.setBuiltInZoomControls(true);
-        map.setMultiTouchControls(true);
-        map.onResume();
-
-        RotationGestureOverlay mRotationGestureOverlay = new RotationGestureOverlay(context, map);
-        mRotationGestureOverlay.setEnabled(true);
-        map.setMultiTouchControls(true);
-        map.getOverlays().add(mRotationGestureOverlay);
 
 
-        IMapController mapController = map.getController();
-        GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
-        mapController.animateTo(startPoint, 8.0, Long.valueOf(1000));
-        map.setMapOrientation(getBearing());
-
-        mBearingProvider = new BearingToNorthProvider(context);
-        mBearingProvider.setChangeEventListener(Home.this);
-        mBearingProvider.start();
-
-        map.setOnHoverListener(new View.OnHoverListener() {
-            @Override
-            public boolean onHover(View v, MotionEvent event) {
-                Log.i("meri", "onHover");
-                return false;
-            }
-        });
-
-        map.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                MapMove = true;
+//        Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context));
+//        map = (MapView) view.findViewById(R.id.map);
+//        map.setTileSource(TileSourceFactory.MAPNIK);
+//        map.setBuiltInZoomControls(true);
+//        map.setMultiTouchControls(true);
+//        map.onResume();
+//
+//        RotationGestureOverlay mRotationGestureOverlay = new RotationGestureOverlay(context, map);
+//        mRotationGestureOverlay.setEnabled(true);
+//        map.setMultiTouchControls(true);
+//        map.getOverlays().add(mRotationGestureOverlay);
+//
+//
+//        IMapController mapController = map.getController();
+//        GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
+//        mapController.animateTo(startPoint, 8.0, Long.valueOf(1000));
+//        mapController.animateTo(startPoint, 18.0, Long.valueOf(1000), 0.0f);
+//
+//        mBearingProvider = new BearingToNorthProvider(context);
+//        mBearingProvider.setChangeEventListener(Home.this);
+//        mBearingProvider.start();
+//
+//        map.setOnHoverListener(new View.OnHoverListener() {
+//            @Override
+//            public boolean onHover(View v, MotionEvent event) {
+//                Log.i("meri", "onHover");
+//                return false;
+//            }
+//        });
+//
+//        map.setOnTouchListener(new View.OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View v, MotionEvent event) {
+//                MapMove = true;
 //                BtnMove.setVisibility(View.VISIBLE);
-
-                if (GetDirection)
-                    return false;
-                map.getOverlays().remove(currentMarker);
-                currentMarker = null;
-
-                if (AccessToGoneDirection) {
-                    RelativeLayoutDirection.setVisibility(View.GONE);
-                    RemoveMarker();
-                }
-
-                return false;
-            }
-        });
+//
+//                if (GetDirection)
+//                    return false;
+//                map.getOverlays().remove(currentMarker);
+//                currentMarker = null;
+//
+//                if (AccessToGoneDirection) {
+//                    RelativeLayoutDirection.setVisibility(View.GONE);
+//                    RemoveMarker();
+//                }
+//
+//                return false;
+//            }
+//        });
 
         MapEventsReceiver mReceive = new MapEventsReceiver() {
             @Override
@@ -236,12 +240,12 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                 AccessToGoneDirection = false;
                 pointLatLng = new LatLng(p.getLatitude(), p.getLongitude());
                 GeoPoint point = new GeoPoint(p.getLatitude(), p.getLongitude());
-                pointMarket = new Marker(map);
+//                pointMarket = new Marker(map);
                 pointMarket.setPosition(point);
                 pointMarket.setIcon(getResources().getDrawable(R.drawable.marker_point));
                 pointMarket.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                map.getOverlays().add(pointMarket);
-                map.getController().animateTo(point, map.getZoomLevelDouble(), Long.valueOf(1000));
+//                map.getOverlays().add(pointMarket);
+//                map.getController().animateTo(point, map.getZoomLevelDouble(), Long.valueOf(1000));
                 AccessToRemoveMarker = true;
                 TextViewAddress.setText("درحال یافتن آدرس، شکیبا باشید ...");
                 RelativeLayoutDirection.setVisibility(View.VISIBLE);
@@ -258,56 +262,20 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                 return false;
             }
         };
-        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
-        map.getOverlays().add(OverlayEvents);
+//        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
+//        map.getOverlays().add(OverlayEvents);
 
         BtnMove.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-                float before = Float.valueOf(TextViewBearingbefor.getText().toString());
-                float after = Float.valueOf(TextViewBearing.getText().toString());
-                float b = before - after;
-                boolean clock = false;
-                if (b < 0) {
-                    clock = false;
-                    if (after > 0)
-                        after = after * -1;
-                }
-                else {
-                    clock = true;
-                    if (after < 0)
-                        after = after * -1;
-
-                }
-                IMapController mapController = map.getController();
-                mapController.animateTo(currentPoint, 20.0, Long.valueOf(1000), after, clock);
                 MapMove = false;
-                Log.i("meri", "before : " + before + " - after : " + after);
+//                GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//                IMapController mapController = map.getController();
+//                mapController.animateTo(currentPoint, 18.0, Long.valueOf(1000), CalcBearing(bearing));
+                BtnMove.setVisibility(View.INVISIBLE);
+
             }
         });
-
-//        BtnMove.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-////                BtnMove.setVisibility(View.INVISIBLE);
-//                MapMove = false;
-//                if (CurrentLatLng != null) {
-//                    IMapController mapController = map.getController();
-//                    GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-//                    mapController.animateTo(currentPoint, 19.0, Long.valueOf(1000), getBearing(), true);
-//                    if (currentMarker == null) {
-//                        currentMarker = new Marker(map);
-//                        currentMarker.setPosition(currentPoint);
-//                        currentMarker.setIcon(getResources().getDrawable(R.drawable.truck_marker));
-//                        currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-//                        map.getOverlays().add(currentMarker);
-//                    } else {
-//                        currentMarker.setPosition(currentPoint);
-//                    }
-//                }
-//            }
-//        });
 
 
         LinearLayoutRouter.setOnClickListener(new View.OnClickListener() {
@@ -349,7 +317,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
             @Override
             public void run() {
                 if (pointMarket != null) {
-                    map.getOverlays().remove(pointMarket);
+//                    map.getOverlays().remove(pointMarket);
                     pointMarket = null;
                     AccessToRemoveMarker = false;
                 }
@@ -408,7 +376,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                                         RetrofitModule.isCancel = true;
                                         RelativeLayoutDirection.setVisibility(View.GONE);
                                         if (pointMarket != null) {
-                                            map.getOverlays().remove(pointMarket);
+//                                            map.getOverlays().remove(pointMarket);
                                             pointMarket = null;
                                         }
                                         AccessToGoneDirectionTrue();
@@ -445,7 +413,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
 
     private void ConfigRoute() {//__________________________________________________________________ Start Void ConfigRoute
 
-//        BtnMove.setVisibility(View.INVISIBLE);
+        BtnMove.setVisibility(View.INVISIBLE);
         MapMove = false;
         DrivingStep = 0;
         OldBearing = 0;
@@ -456,8 +424,8 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         ModelRouteIntersection startIntersection = startStep.getIntersections().get(0);
         GeoPoint StartPoint = new GeoPoint(startIntersection.getLocation().get(1), startIntersection.getLocation().get(0));
         bearing = CalcBearing(startStep.getManeuver().getBearing_after());
-        IMapController mapController = map.getController();
-        mapController.animateTo(StartPoint, 20.0, Long.valueOf(1000), getBearing(), true);
+//        IMapController mapController = map.getController();
+//        mapController.animateTo(StartPoint, 19.5, Long.valueOf(1000), getBearing());
 
         if (startStep.getIntersections().size() > 1) {
             DrawRoutes();
@@ -481,7 +449,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
             for (int i = 0; i < latLngs.size() - 1; i = i + 1) {
                 StartPoint = new GeoPoint(latLngs.get(i).latitude, latLngs.get(i).longitude);
                 EndPoint = new GeoPoint(latLngs.get(i + 1).latitude, latLngs.get(i + 1).longitude);
-                DrawPolyLine(StartPoint, EndPoint,getResources().obtainTypedArray(R.array.colors).getColor(color,0));
+                DrawPolyLine(StartPoint, EndPoint, getResources().obtainTypedArray(R.array.colors).getColor(color, 0));
                 color++;
                 if (color == 10)
                     color = 0;
@@ -490,22 +458,22 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         }
         StartPoint = EndPoint;
         EndPoint = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
-        DrawPolyLine(StartPoint, EndPoint,getResources().obtainTypedArray(R.array.colors).getColor(color,0));
+        DrawPolyLine(StartPoint, EndPoint, getResources().obtainTypedArray(R.array.colors).getColor(color, 0));
 
-        if (CurrentLatLng != null) {
-            GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-            if (currentMarker != null) {
-                map.getOverlays().remove(currentMarker);
-                currentMarker = null;
-            }
+//        if (CurrentLatLng != null) {
+//            GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//            if (currentMarker != null) {
+//                map.getOverlays().remove(currentMarker);
+//                currentMarker = null;
+//            }
+//
+//            currentMarker = new Marker(map);
+//            currentMarker.setPosition(currentPoint);
+//            currentMarker.setIcon(getResources().getDrawable(R.drawable.truck_marker));
+//            currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//            map.getOverlays().add(currentMarker);
 
-            currentMarker = new Marker(map);
-            currentMarker.setPosition(currentPoint);
-            currentMarker.setIcon(getResources().getDrawable(R.drawable.truck_marker));
-            currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            map.getOverlays().add(currentMarker);
-
-        }
+//        }
         GetDirection = true;
 
 
@@ -513,12 +481,12 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
 
 
     private void DrawPolyLine(GeoPoint start, GeoPoint end, int color) {
-        Polyline line = new Polyline(map);
-        line.addPoint(start);
-        line.addPoint(end);
-        line.setColor(color);
-        line.setWidth(14.0f);
-        map.getOverlays().add(line);
+//        Polyline line = new Polyline(map);
+//        line.addPoint(start);
+//        line.addPoint(end);
+//        line.setColor(color);
+//        line.setWidth(16.0f);
+//        map.getOverlays().add(line);
     }
 
 
@@ -538,30 +506,32 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
             return;
 
 
-        GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-        if (currentMarker == null) {
-            currentMarker = new Marker(map);
-            currentMarker.setPosition(currentPoint);
-            currentMarker.setIcon(getResources().getDrawable(R.drawable.truck_marker));
-            currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            map.getOverlays().add(currentMarker);
-        } else {
-            currentMarker.setPosition(currentPoint);
-        }
-
-        IMapController mapController = map.getController();
-        mapController.animateTo(currentPoint, 20.0, Long.valueOf(1000), getBearing(), true);
+//        GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//        if (currentMarker == null) {
+//            currentMarker = new Marker(map);
+//            currentMarker.setPosition(currentPoint);
+//            currentMarker.setIcon(getResources().getDrawable(R.drawable.truck_marker));
+//            currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//            map.getOverlays().add(currentMarker);
+//        } else {
+//            currentMarker.setPosition(currentPoint);
+//        }
+//
+//        IMapController mapController = map.getController();
 
         if (GetDirection) {
             MehrdadLatifiMap latifiMap = new MehrdadLatifiMap();
             boolean isInside = false;
             for (int st = 0; st < RoutesLatLng.size(); st++) {
-                for (int line = 0; line < RoutesLatLng.get(st).getLatLngs().size() -1; line++) {
+                for (int line = 0; line < RoutesLatLng.get(st).getLatLngs().size() - 1; line++) {
                     List<LatLng> latLngs = new ArrayList<>();
-                    latLngs.add(new LatLng(RoutesLatLng.get(st).getLatLngs().get(line).latitude,RoutesLatLng.get(st).getLatLngs().get(line).longitude));
-                    latLngs.add(new LatLng(RoutesLatLng.get(st).getLatLngs().get(line + 1).latitude,RoutesLatLng.get(st).getLatLngs().get(line + 1).longitude));
+                    LatLng start = new LatLng(RoutesLatLng.get(st).getLatLngs().get(line).latitude, RoutesLatLng.get(st).getLatLngs().get(line).longitude);
+                    latLngs.add(start);
+                    LatLng end = new LatLng(RoutesLatLng.get(st).getLatLngs().get(line + 1).latitude, RoutesLatLng.get(st).getLatLngs().get(line + 1).longitude);
+                    latLngs.add(end);
                     isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngs, true, 3);
                     if (isInside) {
+                        bearing = (float) GetBearing(start, end);
                         Toast.makeText(context, "isInside : " + isInside + " in Step : " + st + " in Line  : " + line, Toast.LENGTH_LONG).show();
                         break;
                     }
@@ -569,43 +539,14 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                 }
                 if (isInside) {
                     DrivingStep = st;
+//                    mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000), CalcBearing(bearing));
                     break;
                 }
-//                isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, RoutesLatLng.get(st).getLatLngs(), true, 3);
-
-//                isInside = latifiMap.MlMap_isInside(CurrentLatLng, RoutesLatLng.get(st).getLatLngs());
-//                if (isInside) {
-//                    Log.i("meri", "");
-//                    Log.i("meri", "PlyLines : " + RoutesLatLng.get(st).getLatLngs().size());
-//                    Toast.makeText(context, "isInside : " + isInside + " in Step : " + st, Toast.LENGTH_SHORT).show();
-//
-//                    if (DrivingStep - st < 0) {
-//                        float before = RoutesLatLng.get(st).getBearingBefore();
-//                        float after = RoutesLatLng.get(st).getBearingAfter();
-//                        float b = before - after;
-//                        boolean clock = false;
-//                        if (b < 0) {
-//                            clock = false;
-//                        }
-//                        else {
-//                            clock = true;
-//                        }
-//                        bearing = bearing + b;
-//                        mapController.animateTo(currentPoint, 20.0, Long.valueOf(1000), getBearing(), clock);
-//                    }
-//
-//                    DrivingStep = st;
-////
-////                    List<ModelRouteIntersection> intersections = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(st).getIntersections();
-////                    for (int i = 0; i < intersections.size(); i++)
-////                        Log.i("meri", "Bearings : " + intersections.get(i).getBearings());
-////                    Log.i("meri", "======================================================");
-////                    Log.i("meri", "");
-//                    break;
-//                }
+//                    mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000));
             }
 
         }
+//            mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000));
 
     }
 
@@ -621,14 +562,11 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         double lon1 = from.longitude * Math.PI / 180.0;
         double lat2 = to.latitude * Math.PI / 180.0;
         double lon2 = to.longitude * Math.PI / 180.0;
-
-        // Compute the angle.
         double angle = -Math.atan2(Math.sin(lon1 - lon2) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon1 - lon2));
 
         if (angle < 0.0)
             angle += Math.PI * 2.0;
 
-        // And convert result to degrees.
         angle = angle * degreesPerRadian;
 
         return angle;
@@ -660,17 +598,13 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     public void onDestroy() {//_____________________________________________________________________ onDestroy
         super.onDestroy();
         mBearingProvider.stop();
-        map.onPause();
+//        map.onPause();
     }//_____________________________________________________________________________________________ onDestroy
 
 
     private void turnOnScreen() {//_________________________________________________________________ Start turnOnScreen
         getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        // turn on screen
-//        PowerManager mPowerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-//        PowerManager.WakeLock mWakeLock;
-//        mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "AppName:tag");
-//        mWakeLock.acquire();
+
     }//_____________________________________________________________________________________________ End turnOnScreen
 
 
@@ -678,7 +612,9 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         return bearing;
     }
 
+
     private float CalcBearing(float bearing) {
+//        float MapOrientation = map.getMapOrientation();
         return 360 - bearing;
     }
 
@@ -686,8 +622,29 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     public void onStop() {//________________________________________________________________________ Start onStop
         super.onStop();
         mBearingProvider.stop();
-        map.onPause();
+//        map.onPause();
         OnStop = true;
     }//_____________________________________________________________________________________________ End onStop
+
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.setMyLocationEnabled(true);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+
+        mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
+            @Override
+            public void onMapLoaded() {
+                mBearingProvider = new BearingToNorthProvider(context);
+                mBearingProvider.setChangeEventListener(Home.this);
+                mBearingProvider.start();
+            }
+        });
+
+    }
+
 
 }
