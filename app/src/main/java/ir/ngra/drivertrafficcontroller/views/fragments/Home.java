@@ -480,7 +480,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         line.addPoint(start);
         line.addPoint(end);
         line.setColor(color);
-        line.setWidth(16.0f);
+        line.setWidth(21.0f);
         map.getOverlays().add(line);
     }
 
@@ -524,7 +524,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                     latLngs.add(start);
                     LatLng end = new LatLng(RoutesLatLng.get(st).getLatLngs().get(line + 1).latitude, RoutesLatLng.get(st).getLatLngs().get(line + 1).longitude);
                     latLngs.add(end);
-                    isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngs, true, 3);
+                    isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngs, true, 5);
                     if (isInside) {
                         bearing = (float) GetBearing(start, end);
                         Toast.makeText(context, "isInside : " + isInside + " in Step : " + st + " in Line  : " + line, Toast.LENGTH_LONG).show();
