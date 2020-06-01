@@ -172,7 +172,7 @@ public class VM_Home {
                 TrafficController.getApplication(context)
                 .getRetrofitComponent();
 
-        String url = "https://routing.openstreetmap.de/routed-car/route/v1/driving/" + CurrentLon +"," + CurrentLat + ";" + lon + "," + lat + "?overview=false&geometries=polyline&steps=true";
+        String url = "https://routing.openstreetmap.de/routed-car/route/v1/driving/" + CurrentLon +"," + CurrentLat + ";" + lon + "," + lat + "?overview=false&geometries=polyline&steps=true&alternatives=true&exclude=motorway";
 
         retrofitComponent.getRetrofitApiInterface()
                 .getRoute(url)
@@ -180,6 +180,9 @@ public class VM_Home {
                     @Override
                     public void onResponse(Call<ModelRoute> call, Response<ModelRoute> response) {
                         route = response.body();
+                        if (route == null || route.getRoutes() == null || route.getRoutes().size() == 0)
+                            publishSubject.onNext("onFailure");
+                        else
                         publishSubject.onNext("GetDirection");
                     }
 

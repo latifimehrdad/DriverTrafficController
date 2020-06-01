@@ -95,8 +95,8 @@ public class Splash extends Fragment {
                                 ConfigHandlerForHome();
                                 break;
                             case "ConfigHandlerForLogin":
-                                //ConfigHandlerForHome();
-                                ConfigHandlerForLogin();
+                                ConfigHandlerForHome();
+                                //ConfigHandlerForLogin();
                                 break;
                             case "CancelByUser":
                                 break;

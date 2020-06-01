@@ -76,7 +76,7 @@ public class MehrdadLatifiMap {
 
             getGoogleMap().addPolyline(polylines);
             float bearing = (float) GetBearing(from,to);
-            int icon = R.drawable.maparrow;
+            int icon = R.drawable.navi_marker;
             LatLng centerLatLng = null;
             LatLngBounds.Builder builder = new LatLngBounds.Builder();
             builder.include(from);

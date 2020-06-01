@@ -28,7 +28,7 @@
             android:id="@+id/CarMarker"
             android:layout_width="@dimen/_20sdp"
             android:layout_height="@dimen/_40sdp"
-            android:src="@drawable/truck_marker2"
+            android:src="@drawable/navi_marker"
             android:layout_centerVertical="true"
             android:layout_centerHorizontal="true"
             android:visibility="gone"
