@@ -95,6 +95,8 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     private ModelRoute routes;
     private List<ModelRoutesSteps> RoutesLatLng;
     private Integer DrivingStep;
+    private List<Polyline> polylineList;
+    private Integer PolyIndex;
 
 
     @BindView(R.id.BtnMove)
@@ -414,7 +416,9 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         OldBearing = 0;
         NewBearing = 0;
         BeforeBearing = 0;
+        PolyIndex = -1;
         routes = vm_home.getRoute();
+        polylineList = new ArrayList<>();
         ModelRouteStep startStep = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(0);
         ModelRouteIntersection startIntersection = startStep.getIntersections().get(0);
         GeoPoint StartPoint = new GeoPoint(startIntersection.getLocation().get(1), startIntersection.getLocation().get(0));
@@ -483,6 +487,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         line.setColor(color);
         line.setWidth(21.0f);
         map.getOverlays().add(line);
+        polylineList.add(line);
     }
 
 
@@ -490,6 +495,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     public void onCurrentLocationChange(Location loc) {
 
 
+        Integer LineStep = 0;
         CurrentLocation = loc;
 //        vm_home.getPublishSubject().onNext("CurrentLocation");
         if (CurrentLatLng != null) {
@@ -548,10 +554,24 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                 }
 
                 if (isInside && !CheckNext) {
+
+//                    if (PolyIndex > -1) {
+//                        Polyline p = polylineList.get(PolyIndex);
+//                        p.setColor(getResources().getColor(R.color.ML_PolyLineEnd));
+//                    }
                     mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000), CalcBearing(bearing));
                     break;
                 } else
                     mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000));
+            }
+
+            for (int i = 0 ; i < DrivingStep; i++) {
+                for (int j = 0; j < RoutesLatLng.get(0).getLatLngs().size() - 1; j++) {
+                    Polyline p = polylineList.get(0);
+                    map.getOverlays().remove(p);
+                    polylineList.remove(0);
+                }
+                RoutesLatLng.remove(i);
             }
 
         } else
