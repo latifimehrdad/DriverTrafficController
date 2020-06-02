@@ -1,7 +1,9 @@
 package ir.ngra.drivertrafficcontroller.views.fragments;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,21 +30,26 @@ import androidx.fragment.app.Fragment;
 import com.cunoraz.gifview.library.GifView;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 
+import org.nocrala.tools.gis.data.esri.shapefile.shape.shapes.PolylineMShape;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.events.MapEventsReceiver;
+import org.osmdroid.shape.ShapeConverter;
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.Polygon;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,7 +70,8 @@ import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
 import ir.ngra.drivertrafficcontroller.utility.polyutil.ML_PolyUtil;
 import ir.ngra.drivertrafficcontroller.viewmodels.fragments.VM_Home;
 
-public class Home extends Fragment implements BearingToNorthProvider.ChangeEventListener {
+public class Home extends Fragment implements BearingToNorthProvider.ChangeEventListener,
+        OnMapReadyCallback {
 
     private View view;
     private Context context;
@@ -79,7 +87,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     private DisposableObserver<String> observer;
     private Integer ErrorCount = 0;
     private final double degreesPerRadian = 180.0 / Math.PI;
-    private MapView map = null;
+//    private MapView map = null;
     AlertDialog alertDialog = null;
     private float bearing = 0;
     private float BeforeBearing = 0;
@@ -91,7 +99,6 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     private Marker currentMarker = null;
     private LatLng pointLatLng;
     private boolean GetDirection = false;
-    private boolean OnStop = false;
     private ModelRoute routes;
     private List<ModelRoutesSteps> RoutesLatLng;
     private Integer DrivingStep;
@@ -122,6 +129,8 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     }//_____________________________________________________________________________________________ Home
 
 
+
+
     @Nullable
     @Override
     public View onCreateView(
@@ -142,8 +151,10 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     @Override
     public void onStart() {//_______________________________________________________________________ onStart
         super.onStart();
-        if (OnStop)
-            getActivity().onBackPressed();
+
+        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
+                .findFragmentById(R.id.fpraMap);
+        mapFragment.getMapAsync(this);
 
         OSMConfig();
         turnOnScreen();
@@ -155,140 +166,201 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
     }//_____________________________________________________________________________________________ onStart
 
 
-    private void OSMConfig() {//____________________________________________________________________ OSMConfig
+    @SuppressLint("MissingPermission")
+    @Override
+    public void onMapReady(GoogleMap googleMap) {//_________________________________________________ Start onMapReady
+        mMap = googleMap;
+        mMap.setMyLocationEnabled(false);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+        mMap.getUiSettings().setMapToolbarEnabled(false);
 
+        mMap.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
+            @Override
+            public void onMapLoaded() {
+
+                mBearingProvider = new BearingToNorthProvider(context);
+                mBearingProvider.setChangeEventListener(Home.this);
+                mBearingProvider.start();
+
+            }
+        });
+
+
+        mMap.setOnCameraMoveStartedListener(new GoogleMap.OnCameraMoveStartedListener() {
+            @Override
+            public void onCameraMoveStarted(int i) {
+//                textChoose.setVisibility(View.GONE);
+//                MarkerGif.setVisibility(View.VISIBLE);
+            }
+        });
+
+        mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
+            @Override
+            public void onCameraIdle() {
+//                if (getLocation) {
+//                    textChoose.setVisibility(View.VISIBLE);
+//                    MarkerGif.setVisibility(View.GONE);
+//                }
+            }
+        });
+
+
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(com.google.android.gms.maps.model.Marker marker) {
+
+                return false;
+            }
+        });
+
+
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+
+            }
+        });
+
+    }//_____________________________________________________________________________________________ End onMapReady
+
+    private void OSMConfig() {//____________________________________________________________________ OSMConfig
+//
         RelativeLayoutDirection.setVisibility(View.GONE);
         imageViewRouter.setVisibility(View.VISIBLE);
         GifViewRouter.setVisibility(View.GONE);
         BtnMove.setVisibility(View.INVISIBLE);
         currentMarker = null;
-
         ClickForRouting = false;
         AccessToGoneDirection = true;
         AccessToRemoveMarker = true;
         GetDirection = false;
         LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
-
-        Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context));
-        map = (MapView) view.findViewById(R.id.map);
-        map.setTileSource(TileSourceFactory.MAPNIK);
-        map.setBuiltInZoomControls(false);
-        map.setMultiTouchControls(true);
-        map.onResume();
-
-
-        RotationGestureOverlay mRotationGestureOverlay = new RotationGestureOverlay(context, map);
-        mRotationGestureOverlay.setEnabled(true);
-        map.setMultiTouchControls(true);
-        map.getOverlays().add(mRotationGestureOverlay);
-
-
-        IMapController mapController = map.getController();
-
-        GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
-        mapController.animateTo(startPoint, 8.0, Long.valueOf(1000));
-        mapController.animateTo(startPoint, 18.0, Long.valueOf(1000), 0.0f);
-
-        mBearingProvider = new BearingToNorthProvider(context);
-        mBearingProvider.setChangeEventListener(Home.this);
-        mBearingProvider.start();
-
-        map.setOnHoverListener(new View.OnHoverListener() {
-            @Override
-            public boolean onHover(View v, MotionEvent event) {
-                Log.i("meri", "onHover");
-                return false;
-            }
-        });
-
-        map.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                MapMove = true;
-                BtnMove.setVisibility(View.VISIBLE);
-
-                if (GetDirection)
-                    return false;
-                map.getOverlays().remove(currentMarker);
-                currentMarker = null;
-
-                if (AccessToGoneDirection) {
-                    RelativeLayoutDirection.setVisibility(View.GONE);
-                    RemoveMarker();
-                }
-
-                return false;
-            }
-        });
-
-        MapEventsReceiver mReceive = new MapEventsReceiver() {
-            @Override
-            public boolean singleTapConfirmedHelper(GeoPoint p) {
-
-                return false;
-            }
-
-            @Override
-            public boolean longPressHelper(GeoPoint p) {
-                if (GetDirection)
-                    return false;
-                AccessToGoneDirection = false;
-                pointLatLng = new LatLng(p.getLatitude(), p.getLongitude());
-                GeoPoint point = new GeoPoint(p.getLatitude(), p.getLongitude());
-                pointMarket = new Marker(map);
-                pointMarket.setPosition(point);
-                pointMarket.setIcon(getResources().getDrawable(R.drawable.marker_point));
-                pointMarket.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                map.getOverlays().add(pointMarket);
-                map.getController().animateTo(point, map.getZoomLevelDouble(), Long.valueOf(1000));
-                AccessToRemoveMarker = true;
-                TextViewAddress.setText("درحال یافتن آدرس، شکیبا باشید ...");
-                RelativeLayoutDirection.setVisibility(View.VISIBLE);
-                ClickForRouting = false;
-                LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (RetrofitModule.isCancel)
-                            vm_home.GetAddress(p.getLatitude(), p.getLongitude());
-                    }
-                }, 500);
-                return false;
-            }
-        };
-        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
-        map.getOverlays().add(OverlayEvents);
-
-        BtnMove.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MapMove = false;
-                GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-                IMapController mapController = map.getController();
-                mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000), getBearing());
-                BtnMove.setVisibility(View.INVISIBLE);
-
-            }
-        });
-
-
-        LinearLayoutRouter.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (!RetrofitModule.isCancel) {
-                    RetrofitModule.isCancel = true;
-                    imageViewRouter.setVisibility(View.VISIBLE);
-                    GifViewRouter.setVisibility(View.GONE);
-                } else {
-                    imageViewRouter.setVisibility(View.GONE);
-                    GifViewRouter.setVisibility(View.VISIBLE);
-                    vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
-                            pointLatLng.latitude, pointLatLng.longitude);
-                }
-            }
-        });
-
+//
+//        Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context));
+//        map = (MapView) view.findViewById(R.id.map);
+//        map.setUseDataConnection(true);
+//        map.setTileSource(TileSourceFactory.MAPNIK);
+//        map.setBuiltInZoomControls(false);
+//        map.setMultiTouchControls(true);
+//        map.setMinZoomLevel(10.0);
+//        map.onResume();
+//
+//
+//        RotationGestureOverlay mRotationGestureOverlay = new RotationGestureOverlay(context, map);
+//        mRotationGestureOverlay.setEnabled(true);
+//        map.setMultiTouchControls(true);
+//        map.getOverlays().add(mRotationGestureOverlay);
+//
+//
+//        IMapController mapController = map.getController();
+//
+//        GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
+//        mapController.animateTo(startPoint, 8.0, Long.valueOf(1000));
+//        mapController.animateTo(startPoint, 18.0, Long.valueOf(1000), 0.0f);
+//
+//        mBearingProvider = new BearingToNorthProvider(context);
+//        mBearingProvider.setChangeEventListener(Home.this);
+//        mBearingProvider.start();
+//
+//        map.setOnHoverListener(new View.OnHoverListener() {
+//            @Override
+//            public boolean onHover(View v, MotionEvent event) {
+//                Log.i("meri", "onHover");
+//                return false;
+//            }
+//        });
+//
+//        map.setOnTouchListener(new View.OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View v, MotionEvent event) {
+//                MapMove = true;
+//
+//
+//                if (GetDirection) {
+//                    BtnMove.setVisibility(View.VISIBLE);
+//                    return false;
+//                }
+//                map.getOverlays().remove(currentMarker);
+//                currentMarker = null;
+//
+//                if (AccessToGoneDirection) {
+//                    RelativeLayoutDirection.setVisibility(View.GONE);
+//                    RemoveMarker();
+//                }
+//
+//                return false;
+//            }
+//        });
+//
+//        MapEventsReceiver mReceive = new MapEventsReceiver() {
+//            @Override
+//            public boolean singleTapConfirmedHelper(GeoPoint p) {
+//
+//                return false;
+//            }
+//
+//            @Override
+//            public boolean longPressHelper(GeoPoint p) {
+//                if (GetDirection)
+//                    return false;
+//                AccessToGoneDirection = false;
+//                pointLatLng = new LatLng(p.getLatitude(), p.getLongitude());
+//                GeoPoint point = new GeoPoint(p.getLatitude(), p.getLongitude());
+//                pointMarket = new Marker(map);
+//                pointMarket.setPosition(point);
+//                pointMarket.setIcon(getResources().getDrawable(R.drawable.marker_point));
+//                pointMarket.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//                map.getOverlays().add(pointMarket);
+//                map.getController().animateTo(point, map.getZoomLevelDouble(), Long.valueOf(1000));
+//                AccessToRemoveMarker = true;
+//                TextViewAddress.setText("درحال یافتن آدرس، شکیبا باشید ...");
+//                RelativeLayoutDirection.setVisibility(View.VISIBLE);
+//                ClickForRouting = false;
+//                LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
+//                Handler handler = new Handler();
+//                handler.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        if (RetrofitModule.isCancel)
+//                            vm_home.GetAddress(p.getLatitude(), p.getLongitude());
+//                    }
+//                }, 500);
+//                return false;
+//            }
+//        };
+//        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
+//        map.getOverlays().add(OverlayEvents);
+//
+//        BtnMove.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                MapMove = false;
+//                GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//                IMapController mapController = map.getController();
+//                mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000), getBearing());
+//                BtnMove.setVisibility(View.INVISIBLE);
+//
+//            }
+//        });
+//
+//
+//        LinearLayoutRouter.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (!RetrofitModule.isCancel) {
+//                    RetrofitModule.isCancel = true;
+//                    imageViewRouter.setVisibility(View.VISIBLE);
+//                    GifViewRouter.setVisibility(View.GONE);
+//                } else {
+//                    imageViewRouter.setVisibility(View.GONE);
+//                    GifViewRouter.setVisibility(View.VISIBLE);
+//                    vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
+//                            pointLatLng.latitude, pointLatLng.longitude);
+//                }
+//            }
+//        });
+//
     }//_____________________________________________________________________________________________ OSMConfig
 
 
@@ -440,7 +512,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         GeoPoint StartPoint = null;
         GeoPoint EndPoint = null;
         int stepCount = routes.getRoutes().get(0).getLegs().get(0).getSteps().size();
-        List<List<GeoPoint>> latLngPoly = new ArrayList<>();
+        List<LatLng> latLngPoly = new ArrayList<>();
         for (int st = 0; st < stepCount; st++) {
             ModelRouteStep step = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(st);
             List<LatLng> latLngs = ML_PolyUtil.decode(step.getGeometry());
@@ -451,7 +523,8 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                 List<GeoPoint> poly = new ArrayList<>();
                 poly.add(StartPoint);
                 poly.add(EndPoint);
-                latLngPoly.add(poly);
+                latLngPoly.add(new LatLng(latLngs.get(i).latitude, latLngs.get(i).longitude));
+                latLngPoly.add(new LatLng(latLngs.get(i + 1).latitude, latLngs.get(i + 1).longitude));
                 DrawPolyLine(StartPoint, EndPoint, getResources().getColor(R.color.ML_PolyLine));
             }
 
@@ -459,6 +532,7 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         StartPoint = EndPoint;
         EndPoint = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
         DrawPolyLine(StartPoint, EndPoint, getResources().getColor(R.color.ML_PolyLine));
+        latLngPoly.add(new LatLng(pointLatLng.latitude, pointLatLng.longitude));
 
         if (CurrentLatLng != null) {
             GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
@@ -482,13 +556,15 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
 
     private void DrawPolyLine(GeoPoint start, GeoPoint end, int color) {
         Polyline line = new Polyline(map);
-        line.addPoint(start);
-        line.addPoint(end);
-        line.setColor(color);
-        line.setWidth(21.0f);
-        map.getOverlays().add(line);
+//        line.addPoint(start);
+//        line.addPoint(end);
+//        line.setColor(color);
+//        line.setWidth(21.0f);
+//        map.getOverlays().add(line);
+
         polylineList.add(line);
     }
+
 
 
     @Override
@@ -652,8 +728,8 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
         super.onStop();
         mBearingProvider.stop();
         map.onPause();
-        OnStop = true;
     }//_____________________________________________________________________________________________ End onStop
+
 
 
 }
