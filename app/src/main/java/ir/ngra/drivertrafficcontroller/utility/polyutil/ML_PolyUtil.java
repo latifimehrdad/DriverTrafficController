@@ -1,5 +1,8 @@
 package ir.ngra.drivertrafficcontroller.utility.polyutil;
 
+import android.graphics.Point;
+
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -8,6 +11,7 @@ import java.util.Stack;
 
 public class ML_PolyUtil {
     private static final double DEFAULT_TOLERANCE = 0.1D;
+    public static LatLng meri;
 
     private ML_PolyUtil() {
     }
@@ -379,5 +383,28 @@ public class ML_PolyUtil {
         }
 
         result.append(Character.toChars((int) (v + 63L)));
+    }
+
+
+    public static LatLng getMarkerProjectionOnSegment(LatLng carPos, List<LatLng> segment, Projection projection) {
+        LatLng markerProjection = null;
+
+        Point carPosOnScreen = projection.toScreenLocation(carPos);
+        Point p1 = projection.toScreenLocation(segment.get(0));
+        Point p2 = projection.toScreenLocation(segment.get(1));
+        Point carPosOnSegment = new Point();
+
+        float denominator = (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y);
+        // p1 and p2 are the same
+        if (Math.abs(denominator) <= 1E-10) {
+            markerProjection = segment.get(0);
+        } else {
+            float t = (carPosOnScreen.x * (p2.x - p1.x) - (p2.x - p1.x) * p1.x
+                    + carPosOnScreen.y * (p2.y - p1.y) - (p2.y - p1.y) * p1.y) / denominator;
+            carPosOnSegment.x = (int) (p1.x + (p2.x - p1.x) * t);
+            carPosOnSegment.y = (int) (p1.y + (p2.y - p1.y) * t);
+            markerProjection = projection.fromScreenLocation(carPosOnSegment);
+        }
+        return markerProjection;
     }
 }

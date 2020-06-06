@@ -23,12 +23,11 @@
 
         <ImageView
             android:id="@+id/CarMarker"
-            android:layout_width="@dimen/_20sdp"
-            android:layout_height="@dimen/_40sdp"
+            android:layout_width="@dimen/_25sdp"
+            android:layout_height="@dimen/_36sdp"
             android:src="@drawable/navi_marker"
             android:layout_centerVertical="true"
             android:layout_centerHorizontal="true"
-            android:visibility="gone"
             />
 
 
@@ -125,6 +124,7 @@
                 />
 
         </RelativeLayout>
+
 
 
         <Button
