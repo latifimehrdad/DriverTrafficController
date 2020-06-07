@@ -140,7 +140,8 @@ public class Splash extends Fragment {
                 if (observer != null)
                     observer.dispose();
                 observer = null;
-                navController.navigate(R.id.action_splash_to_home2);
+//                navController.navigate(R.id.action_splash_to_home2);// Google Map
+                navController.navigate(R.id.action_splash_to_homeOsm);// OSM
             }
         }, 2000);
 

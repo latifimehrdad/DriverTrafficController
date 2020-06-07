@@ -2,13 +2,21 @@ package ir.ngra.drivertrafficcontroller.utility;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Point;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
 
+
+import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.osmdroid.api.IGeoPoint;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.Projection;
+
+import java.util.List;
 
 import ir.ngra.drivertrafficcontroller.R;
 import ir.ngra.drivertrafficcontroller.models.ModelMessage;
@@ -17,6 +25,29 @@ import retrofit2.Response;
 
 
 public class StaticFunctions {
+
+    public static GeoPoint getMarkerProjectionOnSegment(GeoPoint carPos, List<GeoPoint> segment, Projection projection) {
+        GeoPoint markerProjection = null;
+
+        Point carPosOnScreen = projection.toPixels(carPos,null);
+        Point p1 = projection.toPixels(segment.get(0), null);
+        Point p2 = projection.toPixels(segment.get(1), null);
+        Point carPosOnSegment = new Point();
+
+        float denominator = (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y);
+        // p1 and p2 are the same
+        if (Math.abs(denominator) <= 1E-10) {
+            markerProjection = segment.get(0);
+        } else {
+            float t = (carPosOnScreen.x * (p2.x - p1.x) - (p2.x - p1.x) * p1.x
+                    + carPosOnScreen.y * (p2.y - p1.y) - (p2.y - p1.y) * p1.y) / denominator;
+            carPosOnSegment.x = (int) (p1.x + (p2.x - p1.x) * t);
+            carPosOnSegment.y = (int) (p1.y + (p2.y - p1.y) * t);
+            IGeoPoint center = projection.fromPixels(carPosOnSegment.x,carPosOnSegment.y);
+            markerProjection = new GeoPoint(center.getLatitude(), center.getLongitude());
+        }
+        return markerProjection;
+    }
 
     public static String GetAuthorization(Context context) {//______________________________________ Start GetAuthorization
         String Authorization = "Bearer ";

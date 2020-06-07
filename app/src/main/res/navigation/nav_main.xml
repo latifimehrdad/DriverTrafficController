@@ -31,6 +31,15 @@
             app:popExitAnim="@anim/slide_out_left"
             />
 
+        <action
+            android:id="@+id/action_splash_to_homeOsm"
+            app:destination="@id/homeOsm"
+            app:enterAnim="@anim/slide_in_left"
+            app:exitAnim="@anim/slide_out_right"
+            app:popEnterAnim="@anim/slide_in_right"
+            app:popExitAnim="@anim/slide_out_left"
+            />
+
     </fragment>
 
     <fragment
@@ -88,5 +97,12 @@
             />
 
     </fragment>
+
+    <fragment
+        android:id="@+id/homeOsm"
+        android:name="ir.ngra.drivertrafficcontroller.views.fragments.HomeOsm"
+        android:label="HomeOsm"
+        tools:layout="@layout/fragment_home_osm"
+        />
 
 </navigation>

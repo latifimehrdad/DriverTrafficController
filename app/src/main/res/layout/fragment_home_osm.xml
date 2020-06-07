@@ -14,13 +14,10 @@
         android:orientation="vertical">
 
 
-        <fragment
-            android:id="@+id/fpraMap"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:context=".Activity.MapsActivity"
-            />
+        <org.osmdroid.views.MapView
+            android:id="@+id/map"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent" />
 
 
         <ImageView
