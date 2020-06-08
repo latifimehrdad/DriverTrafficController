@@ -131,11 +131,14 @@ public class MehrdadLatifiMap {
     }//_____________________________________________________________________________________________ End stylePolygon
 
 
-    public float[] MeasureDistance(LatLng Old, LatLng New) {//______________________________________ Start MeasureDistance
+    public static float MeasureDistance(LatLng Old, LatLng New) {//_______________________________ Start MeasureDistance
         float[] results = new float[1];
         Location.distanceBetween(Old.latitude, Old.longitude,
                 New.latitude, New.longitude, results);
-        return results;
+        if (results.length > 0)
+            return results[0];
+        else
+            return 0;
     }//_____________________________________________________________________________________________ End MeasureDistance
 
 

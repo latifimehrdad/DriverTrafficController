@@ -51,6 +51,7 @@ import io.reactivex.schedulers.Schedulers;
 import ir.ngra.drivertrafficcontroller.R;
 import ir.ngra.drivertrafficcontroller.daggers.retrofit.RetrofitModule;
 import ir.ngra.drivertrafficcontroller.databinding.FragmentHomeOsmBinding;
+import ir.ngra.drivertrafficcontroller.models.ModelDrivingRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteIntersection;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteStep;
@@ -71,7 +72,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private LatLng CurrentLatLng;
     private Location CurrentLocation;
     private boolean MapMove = false;
-    //    private Marker marker;
     private BearingToNorthProvider mBearingProvider;
     private double OldBearing = 0;
     private double NewBearing = 0;
@@ -79,10 +79,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private Integer ErrorCount = 0;
     private final double degreesPerRadian = 180.0 / Math.PI;
     private MapView map = null;
-    AlertDialog alertDialog = null;
     private float bearing = 0;
     private float BeforeBearing = 0;
-    private boolean ClickForRouting = false;
     private boolean AccessToGoneDirection = true;
     private boolean AccessToRemoveMarker = true;
     private LatLng OldLatLng;
@@ -95,7 +93,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private Integer DrivingStep;
     private List<Polyline> polylineList;
     private Integer PolyIndex;
-    private boolean OSM = true;
+    private List<ModelDrivingRoute> drivingRoutes;
 
 
     @BindView(R.id.BtnMove)
@@ -118,6 +116,18 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     @BindView(R.id.CarMarker)
     ImageView CarMarker;
+
+    @BindView(R.id.LinearLayoutManeuver)
+    LinearLayout LinearLayoutManeuver;
+
+    @BindView(R.id.TextViewManeuverDistance)
+    TextView TextViewManeuverDistance;
+
+    @BindView(R.id.TextViewCurrentRoad)
+    TextView TextViewCurrentRoad;
+
+    @BindView(R.id.TextViewNextRoad)
+    TextView TextViewNextRoad;
 
 
     public HomeOsm() {//____________________________________________________________________________ Home
@@ -159,12 +169,12 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     private void ConfigFirst() {//__________________________________________________________________ ConfigFirst
 
+        LinearLayoutManeuver.setVisibility(View.GONE);
         RelativeLayoutDirection.setVisibility(View.GONE);
         imageViewRouter.setVisibility(View.VISIBLE);
         GifViewRouter.setVisibility(View.GONE);
         BtnMove.setVisibility(View.INVISIBLE);
         CarMarker.setVisibility(View.GONE);
-        ClickForRouting = false;
         AccessToGoneDirection = true;
         AccessToRemoveMarker = true;
         GetDirection = false;
@@ -212,6 +222,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         IMapController mapController = map.getController();
         GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
         mapController.animateTo(startPoint, 5.0, Long.valueOf(1000));
+
 
         mBearingProvider = new BearingToNorthProvider(context);
         mBearingProvider.setChangeEventListener(HomeOsm.this);
@@ -271,7 +282,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 AccessToRemoveMarker = true;
                 TextViewAddress.setText("درحال یافتن آدرس، شکیبا باشید ...");
                 RelativeLayoutDirection.setVisibility(View.VISIBLE);
-                ClickForRouting = false;
                 LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
                 Handler handler = new Handler();
                 handler.postDelayed(new Runnable() {
@@ -358,7 +368,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                                     case "GetAddress":
                                         TextViewAddress.setText(vm_home.getTextAddress());
                                         LinearLayoutRouter.setBackgroundResource(R.drawable.button_bg);
-                                        ClickForRouting = true;
                                         RetrofitModule.isCancel = true;
                                         AccessToRemoveMarker = true;
                                         AccessToGoneDirectionTrue();
@@ -366,7 +375,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                                     case "onFailureAddress":
                                         TextViewAddress.setText("");
                                         LinearLayoutRouter.setBackgroundResource(R.drawable.button_bg);
-                                        ClickForRouting = true;
                                         AccessToGoneDirectionTrue();
                                         AccessToRemoveMarker = true;
                                         RetrofitModule.isCancel = true;
@@ -438,22 +446,16 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             polylineList.clear();
             polylineList = null;
         }
-        if (RoutesLatLng != null) {
-            RoutesLatLng.clear();
-            RoutesLatLng = null;
-        }
-        RoutesLatLng = new ArrayList<>();
+//        if (RoutesLatLng != null) {
+//            RoutesLatLng.clear();
+//            RoutesLatLng = null;
+//        }
+//        RoutesLatLng = new ArrayList<>();
         polylineList = new ArrayList<>();
         ModelRouteStep startStep = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(0);
-        ModelRouteIntersection startIntersection = startStep.getIntersections().get(0);
         bearing = startStep.getManeuver().getBearing_after();
 
-        if (startStep.getIntersections().size() > 1) {
-            DrawRoutes();
-        } else {
-            DrawRoutes();
-        }
-
+        DrawRoutes();
 
     }//_____________________________________________________________________________________________ End ConfigRoute
 
@@ -461,48 +463,160 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private void DrawRoutes() {//___________________________________________________________________ DrawRoutes
         GeoPoint StartPoint = null;
         GeoPoint EndPoint = null;
-        int stepCount = routes.getRoutes().get(0).getLegs().get(0).getSteps().size();
-        for (int st = 0; st < stepCount; st++) {
-            ModelRouteStep step = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(st);
-            List<LatLng> latLngs = ML_PolyUtil.decode(step.getGeometry());
-            RoutesLatLng.add(new ModelRoutesSteps(latLngs, step.getManeuver().getBearing_before(), step.getManeuver().getBearing_after()));
-            for (int i = 0; i < latLngs.size() - 1; i = i + 1) {
-                StartPoint = new GeoPoint(latLngs.get(i).latitude, latLngs.get(i).longitude);
-                EndPoint = new GeoPoint(latLngs.get(i + 1).latitude, latLngs.get(i + 1).longitude);
-                DrawPolyLine(StartPoint, EndPoint);
+
+        //*** New Code
+        if (drivingRoutes != null)
+            drivingRoutes.clear();
+        else
+            drivingRoutes = new ArrayList<>();
+
+        ArrayList<ModelRouteStep> steps = routes.getRoutes().get(0).getLegs().get(0).getSteps();
+
+        for (ModelRouteStep step : steps) {
+            List<LatLng> latLng = ML_PolyUtil.decode(step.getGeometry());
+            float duration = step.getDuration();
+            float distance = step.getDistance();
+            String streetName = step.getName();
+            String stepType = step.getManeuver().getType();
+            String Modifier = step.getManeuver().getModifier();
+            if (Modifier != null)
+                if (!Modifier.equalsIgnoreCase("null"))
+                    stepType = stepType + " " + Modifier;
+
+            List<Polyline> polylines = new ArrayList<>();
+            for (int i = 0; i < latLng.size() -1; i++) {
+                StartPoint = new GeoPoint(latLng.get(i).latitude, latLng.get(i).longitude);
+                EndPoint = new GeoPoint(latLng.get(i + 1).latitude, latLng.get(i + 1).longitude);
+                polylines.add(DrawPolyLines(StartPoint, EndPoint));
             }
 
+            ModelDrivingRoute drivingRoute = new ModelDrivingRoute(latLng,polylines,duration,distance,streetName,stepType);
+            drivingRoutes.add(drivingRoute);
+
         }
-        StartPoint = EndPoint;
-        EndPoint = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
-        DrawPolyLine(StartPoint, EndPoint);
+        map.invalidate();
 
         if (CurrentLatLng != null) {
-            List<GeoPoint> point = polylineList.get(0).getActualPoints();
-            GeoPoint start = new GeoPoint(point.get(0).getLatitude(), point.get(0).getLongitude());
-            GeoPoint end = new GeoPoint(point.get(1).getLatitude(), point.get(1).getLongitude());
-            List<GeoPoint> Start = new ArrayList<>();
-            Start.add(start);
-            Start.add(end);
             GeoPoint current = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-            GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, Start,map.getProjection());
+            GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, drivingRoutes.get(0).getPolylines().get(0).getActualPoints(), map.getProjection());
             IMapController mapController = map.getController();
             mapController.animateTo(car, 19.5, Long.valueOf(1000), getBearing());
-
         }
+
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
+                CalculateDistance(drivingRoutes.get(0).getDistance());
+                String name = drivingRoutes.get(0).getStreetName();
+                SetRoadName("خیابان فعلی : ", name, TextViewCurrentRoad);
+
+                if (drivingRoutes.size() > 1)
+                    name = drivingRoutes.get(1).getStreetName();
+                else
+                    name = drivingRoutes.get(0).getStreetName();
+
+                SetRoadName("خیابان بعدی : ", name, TextViewNextRoad);
+                LinearLayoutManeuver.setVisibility(View.VISIBLE);
                 GetDirection = true;
             }
         }, 1000);
+
+        //*** New Code
+
+
+//        int stepCount = routes.getRoutes().get(0).getLegs().get(0).getSteps().size();
+//
+//
+//        for (int st = 0; st < stepCount; st++) {
+//            ModelRouteStep step = routes.getRoutes().get(0).getLegs().get(0).getSteps().get(st);
+//            List<LatLng> latLngs = ML_PolyUtil.decode(step.getGeometry());
+//            RoutesLatLng.add(new ModelRoutesSteps(latLngs, step.getManeuver().getBearing_before(), step.getManeuver().getBearing_after()));
+//            for (int i = 0; i < latLngs.size() - 1; i = i + 1) {
+//                StartPoint = new GeoPoint(latLngs.get(i).latitude, latLngs.get(i).longitude);
+//                EndPoint = new GeoPoint(latLngs.get(i + 1).latitude, latLngs.get(i + 1).longitude);
+//                DrawPolyLine(StartPoint, EndPoint);
+//            }
+//
+//        }
+//        StartPoint = EndPoint;
+//        EndPoint = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
+//        DrawPolyLine(StartPoint, EndPoint);
+//
+//        if (CurrentLatLng != null) {
+//            List<GeoPoint> point = polylineList.get(0).getActualPoints();
+//            GeoPoint start = new GeoPoint(point.get(0).getLatitude(), point.get(0).getLongitude());
+//            GeoPoint end = new GeoPoint(point.get(1).getLatitude(), point.get(1).getLongitude());
+//            List<GeoPoint> Start = new ArrayList<>();
+//            Start.add(start);
+//            Start.add(end);
+//            GeoPoint current = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//            GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, Start, map.getProjection());
+//            IMapController mapController = map.getController();
+//            mapController.animateTo(car, 19.5, Long.valueOf(1000), getBearing());
+//
+//        }
+//        Handler handler = new Handler();
+//        handler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                GetDirection = true;
+//            }
+//        }, 1000);
 
 
     }//_____________________________________________________________________________________________ DrawRoutes
 
 
-    private void DrawPolyLine(GeoPoint start, GeoPoint end) {
+    private void CalculateDistance(float Distance) {//______________________________________________ CalculateDistance
+        String message;
+        Integer DistanceMeter = Math.round(Distance);
+        Integer DistanceKm = 0;
+        if (DistanceMeter > 999) {
+            DistanceKm = DistanceMeter / 1000;
+            DistanceMeter = DistanceMeter % 1000;
+        }
+        if (DistanceKm > 0)
+            message = "مسافت باقی مانده : " + DistanceKm+"."+DistanceMeter + " کیلومتر ";
+        else
+            message = "مسافت باقی مانده : " + DistanceMeter + " متر ";
+        TextViewManeuverDistance.setText(message);
+    }//_____________________________________________________________________________________________ CalculateDistance
+
+
+
+    private void SetRoadName(String before, String Name, TextView textView) {//_____________________ SetRoadName
+        if (Name == null)
+            Name = "نامشخص";
+        if (Name.equalsIgnoreCase("null"))
+            Name = "نامشخص";
+        if (Name.length() == 0)
+            Name = "نامشخص";
+        textView.setText(before + Name);
+    }//_____________________________________________________________________________________________ SetRoadName
+
+    private void NewRouting() {//___________________________________________________________________ NewRouting
+        GetDirection = false;
+        map.getOverlays().clear();
+        map.invalidate();
+        GeoPoint point = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
+        drivingRoutes = null;
+        pointMarket = null;
+        pointMarket = new Marker(map);
+        pointMarket.setPosition(point);
+        pointMarket.setIcon(getResources().getDrawable(R.drawable.marker_point));
+        pointMarket.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+        map.getOverlays().add(pointMarket);
+        TextViewAddress.setText("در حال یافتن مسیر جدید ...");
+        RelativeLayoutDirection.setVisibility(View.VISIBLE);
+        imageViewRouter.setVisibility(View.GONE);
+        GifViewRouter.setVisibility(View.VISIBLE);
+        vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
+                pointLatLng.latitude, pointLatLng.longitude);
+    }//_____________________________________________________________________________________________ NewRouting
+
+
+    private Polyline DrawPolyLines(GeoPoint start, GeoPoint end) {//________________________________ DrawPolyLines
         Polyline line = new Polyline(map);
         line.setGeodesic(true);
         line.addPoint(start);
@@ -510,155 +624,324 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         line.setColor(getResources().getColor(R.color.ML_PolyLine));
         line.setWidth(40.0f);
         map.getOverlays().add(line);
+        return line;
+    }//_____________________________________________________________________________________________ DrawPolyLines
 
-        polylineList.add(line);
-    }
 
 
     @Override
-    public void onCurrentLocationChange(Location loc) {
+    public void onCurrentLocationChange(Location loc) {//___________________________________________ onCurrentLocationChange
 
-        Integer LineStep = 0;
-        CurrentLocation = loc;
-//        vm_home.getPublishSubject().onNext("CurrentLocation");
-        if (CurrentLatLng != null) {
-            OldLatLng = CurrentLatLng;
-        } else
-            OldLatLng = new LatLng(0, 0);
+        //*** New Code
 
         if (MapMove)
             return;
 
-        Toast.makeText(context, "LocationChange", Toast.LENGTH_SHORT).show();
+        if (GetDirection) { //______________________________________________________ if GetDirection
+            CurrentLocation = loc;
+            CurrentLatLng = new LatLng(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
+            boolean isInsideManeuver = false;
+            boolean WhileControl = true;
+            int currentStep = -1;
+            int currentPolyLine = -1;
+            boolean WhilePolyLine = true;
 
+            GeoPoint current = new GeoPoint(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
 
-        if (GetDirection) {
-            CurrentLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
-            List<GeoPoint> latLngsLine = null;
-            MehrdadLatifiMap latifiMap = new MehrdadLatifiMap();
-            boolean isInside = false;
-            boolean CheckNext = false;
-            for (int st = 0; st < RoutesLatLng.size(); st++) {
-                for (int line = 0; line < RoutesLatLng.get(st).getLatLngs().size() - 1; line++) {
-                    List<LatLng> latLngs = new ArrayList<>();
-                    List<GeoPoint> latLngsGeoPoint = new ArrayList<>();
-                    LatLng start = new LatLng(RoutesLatLng.get(st).getLatLngs().get(line).latitude, RoutesLatLng.get(st).getLatLngs().get(line).longitude);
-                    latLngs.add(start);
-                    latLngsGeoPoint.add(new GeoPoint(start.latitude,start.longitude));
-                    LatLng end = new LatLng(RoutesLatLng.get(st).getLatLngs().get(line + 1).latitude, RoutesLatLng.get(st).getLatLngs().get(line + 1).longitude);
-                    latLngs.add(end);
-                    latLngsGeoPoint.add(new GeoPoint(end.latitude,end.longitude));
-                    if (CheckNext)
-                        isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngs, true, 4);
-                    else
-                        isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngs, true, 13);
+            while (WhileControl) {//___________________________________________ while (WhileControl)
+                currentStep++;
+                WhilePolyLine = true;
+                currentPolyLine = -1;
 
-                    if (isInside) {
-                        bearing = (float) GetBearing(start, end);
-                        Toast.makeText(context, "isInside : " + isInside + " in Step : " + st + " in Line  : " + line, Toast.LENGTH_SHORT).show();
-                        CheckNext = true;
-                        DrivingStep = st;
-                        latLngsLine = latLngsGeoPoint;
+                while (WhilePolyLine) {
+                    currentPolyLine++;
+                    Polyline polyline = drivingRoutes.get(currentStep).getPolylines().get(currentPolyLine);
+                    List<LatLng> latLngInside = new ArrayList<>();
+                    latLngInside.add(new LatLng(polyline.getActualPoints().get(0).getLatitude(), polyline.getActualPoints().get(0).getLongitude()));
+                    latLngInside.add(new LatLng(polyline.getActualPoints().get(1).getLatitude(), polyline.getActualPoints().get(1).getLongitude()));
+                    isInsideManeuver = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngInside, true, 18);
 
-                    } else {
-                        if (CheckNext) {
-                            isInside = true;
-                            CheckNext = false;
+                    if (isInsideManeuver) {//__________________________________if (isInsideManeuver)
+                        bearing = (float) GetBearing(latLngInside.get(0), latLngInside.get(1));
+                        GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, polyline.getActualPoints(), map.getProjection());
+                        CurrentLatLng = new LatLng(car.getLatitude(), car.getLongitude());
+                        IMapController mapController = map.getController();
+                        mapController.animateTo(car, 19.5, Long.valueOf(750), getBearing());
+                        LatLng EndPolyLine = latLngInside.get(1);
+                        float Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, EndPolyLine);
+                        if (Distance > 8) {
+                            int count = drivingRoutes.get(currentStep).getPolylines().size() - 1;
+                            EndPolyLine = new LatLng(drivingRoutes.get(currentStep).getPolylines().get(count).getActualPoints().get(1).getLatitude(),
+                                    drivingRoutes.get(currentStep).getPolylines().get(count).getActualPoints().get(1).getLongitude());
+                            Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, EndPolyLine);
+                            CalculateDistance(Distance);
+                            String name = drivingRoutes.get(0).getStreetName();
+                            SetRoadName("خیابان فعلی : ", name, TextViewCurrentRoad);
+                            if (drivingRoutes.size() > 1)
+                                name = drivingRoutes.get(1).getStreetName();
+                            else
+                                name = drivingRoutes.get(0).getStreetName();
+                            SetRoadName("خیابان بعدی : ", name, TextViewNextRoad);
+
+                            WhileControl = false;
+                            WhilePolyLine = false;
                             break;
+                        } else {
+                            map.getOverlays().remove(polyline);
+                            drivingRoutes.get(currentStep).getPolylines().remove(polyline);
+                            if (drivingRoutes.get(currentStep).getPolylines().size() == 0) {
+                                currentStep = -1;
+                                drivingRoutes.remove(0);
+                                WhilePolyLine = false;
+                                break;
+                            } else {
+                                currentPolyLine = -1;
+                                continue;
+                            }
                         }
-                    }
 
+                    } else {//_________________________________________________if (isInsideManeuver)
+                        map.getOverlays().remove(polyline);
+                        drivingRoutes.get(currentStep).getPolylines().remove(polyline);
+                        if (drivingRoutes.get(currentStep).getPolylines().size() == 0) {
+                            currentStep = -1;
+                            drivingRoutes.remove(0);
+                            WhilePolyLine = false;
+                            break;
+                        } else {
+                            currentPolyLine = -1;
+                            continue;
+                        }
+                    }//___________________________________________________else if (isInsideManeuver)
                 }
 
-
-                if (st == RoutesLatLng.size() - 1) {
-                    CheckNext = false;
-                }
-
-                if (isInside && !CheckNext) {
-
-                    GeoPoint current = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-                    GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, latLngsLine, map.getProjection());
-                    IMapController mapController = map.getController();
-                    mapController.animateTo(car, 19.5, Long.valueOf(1000), getBearing());
+                if (drivingRoutes.size() < 2)
                     break;
-                } else {
-                    GeoPoint StartPointCenter = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+
+            }//________________________________________________________________ while (WhileControl)
+
+            if (drivingRoutes.size() < 2) {
+                if (!isInsideManeuver)
+                    NewRouting();
+                else {
+                    map.getOverlays().clear();
+                    map.invalidate();
+                    LinearLayoutManeuver.setVisibility(View.GONE);
                     IMapController mapController = map.getController();
-                    mapController.animateTo(StartPointCenter, 19.5, Long.valueOf(1000), getBearing());
+                    mapController.animateTo(current, 18.0, Long.valueOf(1000), getBearing());
                 }
-            }
-
-            if (!isInside) {
-                GetDirection = false;
-                for (Polyline p : polylineList)
-                    map.getOverlays().remove(p);
-                TextViewAddress.setText("در حال یافتن مسیر جدید ...");
-                RelativeLayoutDirection.setVisibility(View.VISIBLE);
-                imageViewRouter.setVisibility(View.GONE);
-                GifViewRouter.setVisibility(View.VISIBLE);
-                vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
-                        pointLatLng.latitude, pointLatLng.longitude);
-            }
-
-            for (int i = 0; i < DrivingStep; i++) {
-                for (int j = 0; j < RoutesLatLng.get(0).getLatLngs().size() - 1; j++) {
-                    Polyline p = polylineList.get(0);
-                    map.getOverlays().remove(p);
-                    polylineList.remove(0);
-                }
-                RoutesLatLng.remove(i);
+            } else {
+                if (!isInsideManeuver)
+                    NewRouting();
             }
 
 
-            float[] results = new float[1];
-            Location.distanceBetween(CurrentLatLng.latitude, CurrentLatLng.longitude,
-                    pointLatLng.latitude, pointLatLng.longitude, results);
-            if (results.length > 0)
-                if (results[0] < 20) {
-                    for (Polyline p : polylineList)
-                        map.getOverlays().remove(p);
-                    polylineList.clear();
-                    RoutesLatLng.clear();
-                    if (pointMarket != null)
-                        map.getOverlays().remove(pointMarket);
-                    GeoPoint StartPointCenter = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-                    IMapController mapController = map.getController();
-                    mapController.animateTo(StartPointCenter, 18.0, Long.valueOf(1000), getBearing());
-                    RelativeLayoutDirection.setVisibility(View.GONE);
-                    imageViewRouter.setVisibility(View.VISIBLE);
-                    GifViewRouter.setVisibility(View.GONE);
-                    BtnMove.setVisibility(View.INVISIBLE);
-                    ClickForRouting = false;
-                    AccessToGoneDirection = true;
-                    AccessToRemoveMarker = true;
-                    GetDirection = false;
-                    LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
-
-                }
-
-
-        } else {
-
-            if (CurrentLatLng == null) {
-                CurrentLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
-                GeoPoint StartPointCenter = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+        } else {//__________________________________________________________________ if GetDirection
+            if (CurrentLocation == null) {
+                CurrentLocation = loc;
+                CurrentLatLng = new LatLng(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
+                GeoPoint current = new GeoPoint(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
                 if (currentMarker == null) {
                     currentMarker = new Marker(map);
-                    currentMarker.setPosition(StartPointCenter);
+                    currentMarker.setPosition(current);
                     currentMarker.setIcon(getResources().getDrawable(R.drawable.navi_marker));
                     currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                     map.getOverlays().add(currentMarker);
                 } else
-                    currentMarker.setPosition(StartPointCenter);
-
+                    currentMarker.setPosition(current);
                 IMapController mapController = map.getController();
-                mapController.animateTo(StartPointCenter, 18.0, Long.valueOf(1000), getBearing());
+                mapController.animateTo(current, 18.0, Long.valueOf(1000), getBearing());
             }
+        }//____________________________________________________________________ else if GetDirection
 
-        }
+        //*** New Code
 
-    }
+//
+//        Integer LineStep = 0;
+//        CurrentLocation = loc;
+////        vm_home.getPublishSubject().onNext("CurrentLocation");
+//        if (CurrentLatLng != null) {
+//            OldLatLng = CurrentLatLng;
+//        } else
+//            OldLatLng = new LatLng(0, 0);
+//
+//        if (MapMove)
+//            return;
+//
+//        Toast.makeText(context, "LocationChange", Toast.LENGTH_SHORT).show();
+//
+//
+//        if (GetDirection) {
+//            CurrentLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
+//            List<GeoPoint> latLngsLine = null;
+//            MehrdadLatifiMap latifiMap = new MehrdadLatifiMap();
+//            boolean isInside = false;
+//            boolean CheckNext = false;
+//            for (int st = 0; st < RoutesLatLng.size(); st++) {
+//                for (int line = 0; line < RoutesLatLng.get(st).getLatLngs().size() - 1; line++) {
+//                    List<LatLng> latLngs = new ArrayList<>();
+//                    List<GeoPoint> latLngsGeoPoint = new ArrayList<>();
+//                    LatLng start = new LatLng(RoutesLatLng.get(st).getLatLngs().get(line).latitude, RoutesLatLng.get(st).getLatLngs().get(line).longitude);
+//                    latLngs.add(start);
+//                    latLngsGeoPoint.add(new GeoPoint(start.latitude, start.longitude));
+//                    LatLng end = new LatLng(RoutesLatLng.get(st).getLatLngs().get(line + 1).latitude, RoutesLatLng.get(st).getLatLngs().get(line + 1).longitude);
+//                    latLngs.add(end);
+//                    latLngsGeoPoint.add(new GeoPoint(end.latitude, end.longitude));
+//                    if (CheckNext)
+//                        isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngs, true, 4);
+//                    else
+//                        isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngs, true, 13);
+//
+//                    if (isInside) {
+//                        bearing = (float) GetBearing(start, end);
+//                        Toast.makeText(context, "isInside : " + isInside + " in Step : " + st + " in Line  : " + line, Toast.LENGTH_SHORT).show();
+//                        CheckNext = true;
+//                        DrivingStep = st;
+//                        latLngsLine = latLngsGeoPoint;
+//
+//                    } else {
+//                        if (CheckNext) {
+//                            isInside = true;
+//                            CheckNext = false;
+//                            break;
+//                        }
+//                    }
+//
+//                }
+//
+//
+//                if (st == RoutesLatLng.size() - 1) {
+//                    CheckNext = false;
+//                }
+//
+//                if (isInside && !CheckNext) {
+//
+//                    GeoPoint current = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//                    GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, latLngsLine, map.getProjection());
+//                    IMapController mapController = map.getController();
+//                    mapController.animateTo(car, 19.5, Long.valueOf(1000), getBearing());
+//                    break;
+//                } else {
+//                    GeoPoint StartPointCenter = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//                    IMapController mapController = map.getController();
+//                    mapController.animateTo(StartPointCenter, 19.5, Long.valueOf(1000), getBearing());
+//                }
+//            }
+//
+//            if (!isInside) {
+//                GetDirection = false;
+//                for (Polyline p : polylineList)
+//                    map.getOverlays().remove(p);
+//                TextViewAddress.setText("در حال یافتن مسیر جدید ...");
+//                RelativeLayoutDirection.setVisibility(View.VISIBLE);
+//                imageViewRouter.setVisibility(View.GONE);
+//                GifViewRouter.setVisibility(View.VISIBLE);
+//                vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
+//                        pointLatLng.latitude, pointLatLng.longitude);
+//            }
+//
+//            for (int i = 0; i < DrivingStep; i++) {
+//                for (int j = 0; j < RoutesLatLng.get(0).getLatLngs().size() - 1; j++) {
+//                    Polyline p = polylineList.get(0);
+//                    map.getOverlays().remove(p);
+//                    polylineList.remove(0);
+//                }
+//                RoutesLatLng.remove(i);
+//            }
+//
+//
+//            float[] results = new float[1];
+//            Location.distanceBetween(CurrentLatLng.latitude, CurrentLatLng.longitude,
+//                    pointLatLng.latitude, pointLatLng.longitude, results);
+//            if (results.length > 0)
+//                if (results[0] < 20) {
+//                    for (Polyline p : polylineList)
+//                        map.getOverlays().remove(p);
+//                    polylineList.clear();
+//                    RoutesLatLng.clear();
+//                    if (pointMarket != null)
+//                        map.getOverlays().remove(pointMarket);
+//                    GeoPoint StartPointCenter = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//                    IMapController mapController = map.getController();
+//                    mapController.animateTo(StartPointCenter, 18.0, Long.valueOf(1000), getBearing());
+//                    RelativeLayoutDirection.setVisibility(View.GONE);
+//                    imageViewRouter.setVisibility(View.VISIBLE);
+//                    GifViewRouter.setVisibility(View.GONE);
+//                    BtnMove.setVisibility(View.INVISIBLE);
+//                    AccessToGoneDirection = true;
+//                    AccessToRemoveMarker = true;
+//                    GetDirection = false;
+//                    LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
+//
+//                }
+//
+//
+//        } else {
+//
+////            if (CurrentLatLng == null) {
+//                CurrentLatLng = new LatLng(loc.getLatitude(), loc.getLongitude());
+//                GeoPoint StartPointCenter = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+//                if (currentMarker == null) {
+//                    currentMarker = new Marker(map);
+//                    currentMarker.setPosition(StartPointCenter);
+//                    currentMarker.setIcon(getResources().getDrawable(R.drawable.navi_marker));
+//                    currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//                    map.getOverlays().add(currentMarker);
+//                } else
+//                    currentMarker.setPosition(StartPointCenter);
+//
+//                bearing = 211;
+//
+//                Handler handler = new Handler();
+//                handler.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        if (pointMarket == null) {
+//                            Polyline line = new Polyline(map);
+//                            line.setGeodesic(true);
+//                            line.addPoint(new GeoPoint(35.830031, 50.962803));
+//                            line.addPoint(new GeoPoint(35.829583, 50.962436));
+//                            line.setColor(getResources().getColor(R.color.ML_PolyLine));
+//                            line.setWidth(40.0f);
+//                            map.getOverlays().add(line);
+//                        }
+//
+//                        List<LatLng> lngs = new ArrayList<>();
+//                        lngs.add(new LatLng(35.830031, 50.962803));
+//                        lngs.add(new LatLng(35.829583, 50.962436));
+//                        boolean isInside = ML_PolyUtil.isLocationOnPath(CurrentLatLng, lngs, true, 20);
+//                        if (isInside) {
+//                            List<GeoPoint> te = new ArrayList<>();
+//                            te.add(new GeoPoint(35.830031, 50.962803));
+//                            te.add(new GeoPoint(35.829583, 50.962436));
+//                            GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(StartPointCenter, te, map.getProjection());
+//                            if (pointMarket == null) {
+//                                pointMarket = new Marker(map);
+//                                pointMarket.setPosition(car);
+//                                pointMarket.setIcon(getResources().getDrawable(R.drawable.marker_point));
+//                                pointMarket.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//                                map.getOverlays().add(pointMarket);
+//                                map.invalidate();
+//                            } else {
+//                                pointMarket.setPosition(car);
+//                            }
+//                        } else
+//                            if (pointMarket != null) {
+//                                map.getOverlays().remove(pointMarket);
+//                                pointMarket = null;
+//                            }
+//
+//                    }
+//                },1500);
+//
+//
+//                IMapController mapController = map.getController();
+//                mapController.animateTo(StartPointCenter, 19.0, Long.valueOf(1000), getBearing());
+////            }
+//
+//        }
+
+    }//_____________________________________________________________________________________________ onCurrentLocationChange
 
 
     @Override
@@ -681,7 +964,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
         return angle;
     }//_____________________________________________________________________________________________ End GetBearing
-
 
 
     @Override

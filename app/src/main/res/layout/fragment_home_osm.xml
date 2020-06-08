@@ -20,6 +20,70 @@
             android:layout_height="fill_parent" />
 
 
+        <LinearLayout
+            android:id="@+id/LinearLayoutManeuver"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/_10sdp"
+            android:layout_marginRight="@dimen/_10sdp"
+            android:background="@drawable/dw_back_maneuver"
+            android:padding="@dimen/_7sdp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            >
+
+            <ImageView
+                android:layout_width="@dimen/_40sdp"
+                android:layout_height="@dimen/_40sdp"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginLeft="@dimen/_2sdp"
+                android:padding="@dimen/_1sdp"
+                >
+
+                <TextView
+                    android:id="@+id/TextViewManeuverDistance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/ML_Black"
+                    android:gravity="center"
+                    android:textSize="@dimen/_10sdp"
+                    android:layout_marginTop="@dimen/_2sdp"
+                    />
+
+                <TextView
+                    android:id="@+id/TextViewCurrentRoad"
+                    fontPath="font/iransans_web_medium.ttf"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/ML_Black"
+                    android:gravity="right"
+                    android:textSize="@dimen/_8sdp"
+                    android:layout_marginTop="@dimen/_3sdp"
+                    />
+
+                <TextView
+                    android:id="@+id/TextViewNextRoad"
+                    fontPath="font/iransans_web_medium.ttf"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/ML_Black"
+                    android:gravity="right"
+                    android:textSize="@dimen/_8sdp"
+                    android:layout_marginTop="@dimen/_3sdp"
+                    android:layout_marginBottom="@dimen/_2sdp"
+                    />
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+
+
         <ImageView
             android:id="@+id/CarMarker"
             android:layout_width="@dimen/_25sdp"
