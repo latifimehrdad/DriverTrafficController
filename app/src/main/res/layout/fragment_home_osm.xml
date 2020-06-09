@@ -33,6 +33,7 @@
             >
 
             <ImageView
+                android:id="@+id/ImageViewManeuver"
                 android:layout_width="@dimen/_40sdp"
                 android:layout_height="@dimen/_40sdp"/>
 
@@ -51,7 +52,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/ML_Black"
                     android:gravity="center"
-                    android:textSize="@dimen/_10sdp"
+                    android:textSize="@dimen/_12sdp"
                     android:layout_marginTop="@dimen/_2sdp"
                     />
 
@@ -62,7 +63,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/ML_Black"
                     android:gravity="right"
-                    android:textSize="@dimen/_8sdp"
+                    android:textSize="@dimen/_10sdp"
                     android:layout_marginTop="@dimen/_3sdp"
                     />
 
@@ -73,7 +74,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/ML_Black"
                     android:gravity="right"
-                    android:textSize="@dimen/_8sdp"
+                    android:textSize="@dimen/_10sdp"
                     android:layout_marginTop="@dimen/_3sdp"
                     android:layout_marginBottom="@dimen/_2sdp"
                     />

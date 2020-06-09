@@ -54,6 +54,7 @@ import ir.ngra.drivertrafficcontroller.databinding.FragmentHomeOsmBinding;
 import ir.ngra.drivertrafficcontroller.models.ModelDrivingRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteIntersection;
+import ir.ngra.drivertrafficcontroller.models.ModelRouteManeuver;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteStep;
 import ir.ngra.drivertrafficcontroller.models.ModelRoutesSteps;
 import ir.ngra.drivertrafficcontroller.utility.BearingToNorthProvider;
@@ -94,6 +95,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private List<Polyline> polylineList;
     private Integer PolyIndex;
     private List<ModelDrivingRoute> drivingRoutes;
+    private Marker Real;
+    private MapEventsReceiver mReceive;
 
 
     @BindView(R.id.BtnMove)
@@ -128,6 +131,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     @BindView(R.id.TextViewNextRoad)
     TextView TextViewNextRoad;
+
+    @BindView(R.id.ImageViewManeuver)
+    ImageView ImageViewManeuver;
 
 
     public HomeOsm() {//____________________________________________________________________________ Home
@@ -219,10 +225,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         map.setMultiTouchControls(true);
         map.getOverlays().add(mRotationGestureOverlay);
 
-        IMapController mapController = map.getController();
         GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
-        mapController.animateTo(startPoint, 5.0, Long.valueOf(1000));
-
+        MoveCamera(startPoint,7.0);
 
         mBearingProvider = new BearingToNorthProvider(context);
         mBearingProvider.setChangeEventListener(HomeOsm.this);
@@ -259,7 +263,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             }
         });
 
-        MapEventsReceiver mReceive = new MapEventsReceiver() {
+        mReceive = new MapEventsReceiver() {
             @Override
             public boolean singleTapConfirmedHelper(GeoPoint p) {
 
@@ -270,6 +274,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             public boolean longPressHelper(GeoPoint p) {
                 if (GetDirection)
                     return false;
+                GifViewRouter.setVisibility(View.GONE);
+                imageViewRouter.setVisibility(View.VISIBLE);
                 AccessToGoneDirection = false;
                 pointLatLng = new LatLng(p.getLatitude(), p.getLongitude());
                 GeoPoint point = new GeoPoint(p.getLatitude(), p.getLongitude());
@@ -477,30 +483,23 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             float duration = step.getDuration();
             float distance = step.getDistance();
             String streetName = step.getName();
-            String stepType = step.getManeuver().getType();
-            String Modifier = step.getManeuver().getModifier();
-            if (Modifier != null)
-                if (!Modifier.equalsIgnoreCase("null"))
-                    stepType = stepType + " " + Modifier;
-
+            ModelRouteManeuver routeManeuver = step.getManeuver();
             List<Polyline> polylines = new ArrayList<>();
-            for (int i = 0; i < latLng.size() -1; i++) {
+            for (int i = 0; i < latLng.size() - 1; i++) {
                 StartPoint = new GeoPoint(latLng.get(i).latitude, latLng.get(i).longitude);
                 EndPoint = new GeoPoint(latLng.get(i + 1).latitude, latLng.get(i + 1).longitude);
                 polylines.add(DrawPolyLines(StartPoint, EndPoint));
             }
 
-            ModelDrivingRoute drivingRoute = new ModelDrivingRoute(latLng,polylines,duration,distance,streetName,stepType);
+            ModelDrivingRoute drivingRoute = new ModelDrivingRoute(latLng, polylines, duration, distance, streetName, routeManeuver);
             drivingRoutes.add(drivingRoute);
 
         }
-        map.invalidate();
 
         if (CurrentLatLng != null) {
             GeoPoint current = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
             GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, drivingRoutes.get(0).getPolylines().get(0).getActualPoints(), map.getProjection());
-            IMapController mapController = map.getController();
-            mapController.animateTo(car, 19.5, Long.valueOf(1000), getBearing());
+            MoveCamera(car, 19.5);
         }
 
         Handler handler = new Handler();
@@ -509,14 +508,20 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             public void run() {
                 CalculateDistance(drivingRoutes.get(0).getDistance());
                 String name = drivingRoutes.get(0).getStreetName();
-                SetRoadName("خیابان فعلی : ", name, TextViewCurrentRoad);
+                SetRoadName("مسیر فعلی : ", name, TextViewCurrentRoad);
 
-                if (drivingRoutes.size() > 1)
+                if (drivingRoutes.size() > 1) {
                     name = drivingRoutes.get(1).getStreetName();
-                else
+                    name = SetImageManeuver(drivingRoutes.get(1).getRouteManeuver(), name);
+                    SetRoadName("مسیر بعدی : ", name, TextViewNextRoad);
+                }
+                else {
                     name = drivingRoutes.get(0).getStreetName();
+                    name = SetImageManeuver(drivingRoutes.get(0).getRouteManeuver(), name);
+                    SetRoadName("مسیر بعدی : ", name, TextViewNextRoad);
+                }
 
-                SetRoadName("خیابان بعدی : ", name, TextViewNextRoad);
+
                 LinearLayoutManeuver.setVisibility(View.VISIBLE);
                 GetDirection = true;
             }
@@ -568,6 +573,12 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     }//_____________________________________________________________________________________________ DrawRoutes
 
 
+    private void MoveCamera(GeoPoint geoPoint, Double zoom) {//_____________________________________ MoveCamera
+        IMapController mapController = map.getController();
+        mapController.animateTo(geoPoint, zoom, Long.valueOf(500), getBearing());
+    }//_____________________________________________________________________________________________ MoveCamera
+
+
     private void CalculateDistance(float Distance) {//______________________________________________ CalculateDistance
         String message;
         Integer DistanceMeter = Math.round(Distance);
@@ -577,12 +588,11 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             DistanceMeter = DistanceMeter % 1000;
         }
         if (DistanceKm > 0)
-            message = "مسافت باقی مانده : " + DistanceKm+"."+DistanceMeter + " کیلومتر ";
+            message = "مسافت باقی مانده : " + DistanceKm + "." + DistanceMeter + " کیلومتر ";
         else
             message = "مسافت باقی مانده : " + DistanceMeter + " متر ";
         TextViewManeuverDistance.setText(message);
     }//_____________________________________________________________________________________________ CalculateDistance
-
 
 
     private void SetRoadName(String before, String Name, TextView textView) {//_____________________ SetRoadName
@@ -595,10 +605,168 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         textView.setText(before + Name);
     }//_____________________________________________________________________________________________ SetRoadName
 
+
+    private String SetImageManeuver(ModelRouteManeuver maneuver, String Name) {//___________________ SetImageManeuver
+
+        String type = maneuver.getType();
+        String m;
+        switch (type) {
+            case "on ramp":
+            case "off ramp":
+            case "merge":
+            case "end of road":
+            case "fork":
+                m = maneuver.getType() + " ";
+                if (maneuver.getModifier().contentEquals("left"))
+                    m = m + "left";
+                else
+                    m = m + "right";
+                break;
+            case "depart":
+            case "arrive":
+            case "roundabout":
+            case "rotary":
+            case "exit roundabout":
+            case "exit rotary":
+                m = maneuver.getType();
+                break;
+            case "roundabout turn":
+            case "turn":
+            default:
+                m = "turn " + maneuver.getModifier();
+        }
+
+        switch (m) {
+            case "continue":
+            case "turn straight":
+                ImageViewManeuver.setImageResource(R.drawable.arrow0);
+                break;
+            case "turn slight right":
+                ImageViewManeuver.setImageResource(R.drawable.arrow1);
+                Name = "از راست حرکت کنید و وارد " + Name + " بشوید";
+                break;
+            case "turn right":
+            case "on ramp right":
+            case "continue right":
+                ImageViewManeuver.setImageResource(R.drawable.arrow2);
+                Name = "به راست بپیچید و وارد " + Name + " بشوید";
+                break;
+            case "turn sharp right":
+                ImageViewManeuver.setImageResource(R.drawable.arrow3);
+                Name = "به راست بپیچید و وارد " + Name + " بشوید";
+                break;
+            case "turn uturn":
+                ImageViewManeuver.setImageResource(R.drawable.arrow4);
+                Name = "دوربرگردان، دور بزنید و وارد " + Name + " بشوید";
+                break;
+            case "turn slight left":
+                ImageViewManeuver.setImageResource(R.drawable.arrow5);
+                Name = "از چپ حرکت کنید و وارد " + Name + " بشوید";
+                break;
+            case "turn left":
+            case "on ramp left":
+            case "continue left":
+                ImageViewManeuver.setImageResource(R.drawable.arrow6);
+                Name = "به چپ بپیچید و وارد " + Name + " بشوید";
+                break;
+            case "turn sharp left":
+                ImageViewManeuver.setImageResource(R.drawable.arrow7);
+                Name = "به چپ بپیچید و وارد " + Name + " بشوید";
+                break;
+            case "depart":
+                ImageViewManeuver.setImageResource(R.drawable.arrow8);
+                break;
+            case "roundabout":
+            case "exit roundabout":
+            case "rotary":
+            case "exit rotary":
+                ImageViewManeuver.setImageResource(R.drawable.arrow10);
+                Integer exit = maneuver.getExit();
+                if (exit > 0)
+                    Name = "در میدان از " + CountExit(exit) + " خرجی خارج شوید و وارد " + Name + " بشوید";
+                else
+                    Name = "از میدان خارج شده و وارد " + Name + " بشوید";
+                break;
+            case "arrive":
+                ImageViewManeuver.setImageResource(R.drawable.arrow14);
+                break;
+            case "fork right":
+                ImageViewManeuver.setImageResource(R.drawable.arrow18);
+                Integer forkright = maneuver.getExit();
+                if (forkright == null)
+                    Name = "از سمت راست خارج شده و وارد " + Name + " بشوید";
+                else {
+                    if (forkright > 0)
+                        Name = "از " + CountExit(forkright) + "خروجی سمت راست خارج شده و وارد " + Name + " بشوید";
+                    else
+                        Name = "از سمت راست خارج شده و وارد " + Name + " بشوید";
+                }
+                break;
+            case "fork left":
+                ImageViewManeuver.setImageResource(R.drawable.arrow19);
+                Integer forkleft = maneuver.getExit();
+                if (forkleft == null)
+                    Name = "از سمت راست خارج شده و وارد " + Name + " بشوید";
+                else {
+                    if (forkleft > 0)
+                        Name = "از " + CountExit(forkleft) + "خروجی سمت راست خارج شده و وارد " + Name + " بشوید";
+                    else
+                        Name = "از سمت راست خارج شده و وارد " + Name + " بشوید";
+                }
+                break;
+            case "merge left":
+                ImageViewManeuver.setImageResource(R.drawable.arrow20);
+                Name = "از سمت چپ وارد " + Name + " بشوید";
+                break;
+            case "merge right":
+                ImageViewManeuver.setImageResource(R.drawable.arrow21);
+                Name = "از سمت راست وارد " + Name + " بشوید";
+                break;
+            case "end of road right":
+                ImageViewManeuver.setImageResource(R.drawable.arrow22);
+                Name = "به راست بپیچید و وارد " + Name + " بشوید";
+                break;
+            case "end of road left":
+                ImageViewManeuver.setImageResource(R.drawable.arrow23);
+                Name = "به چپ بپیچید و وارد " + Name + " بشوید";
+                break;
+            case "off ramp right":
+                ImageViewManeuver.setImageResource(R.drawable.arrow24);
+                Name = "از راست وارد " + Name + " بشوید";
+                break;
+            case "off ramp left":
+                ImageViewManeuver.setImageResource(R.drawable.arrow25);
+                Name = "از چپ وارد " + Name + " بشوید";
+                break;
+
+        }
+
+        return Name;
+
+    }//_____________________________________________________________________________________________ SetImageManeuver
+
+
+    private String CountExit(Integer exit) {//______________________________________________________ CountExit
+        switch (exit) {
+            case 1:
+                return "اولین";
+            case 2:
+                return "دومین";
+            case 3:
+                return "سومین";
+            case 4:
+                return "چهارمین";
+            case 5:
+                return "پنجمین";
+            default:
+                return "";
+        }
+    }//_____________________________________________________________________________________________ CountExit
+
+
     private void NewRouting() {//___________________________________________________________________ NewRouting
         GetDirection = false;
         map.getOverlays().clear();
-        map.invalidate();
         GeoPoint point = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
         drivingRoutes = null;
         pointMarket = null;
@@ -628,7 +796,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     }//_____________________________________________________________________________________________ DrawPolyLines
 
 
-
     @Override
     public void onCurrentLocationChange(Location loc) {//___________________________________________ onCurrentLocationChange
 
@@ -647,6 +814,14 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             boolean WhilePolyLine = true;
 
             GeoPoint current = new GeoPoint(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
+            if (Real == null) {
+                Real = new Marker(map);
+                Real.setPosition(current);
+                Real.setIcon(getResources().getDrawable(R.drawable.marker_point_green));
+                Real.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                map.getOverlays().add(Real);
+            } else
+                Real.setPosition(current);
 
             while (WhileControl) {//___________________________________________ while (WhileControl)
                 currentStep++;
@@ -659,35 +834,57 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                     List<LatLng> latLngInside = new ArrayList<>();
                     latLngInside.add(new LatLng(polyline.getActualPoints().get(0).getLatitude(), polyline.getActualPoints().get(0).getLongitude()));
                     latLngInside.add(new LatLng(polyline.getActualPoints().get(1).getLatitude(), polyline.getActualPoints().get(1).getLongitude()));
+//
+//                    GeoPoint test = StaticFunctions.getMarkerProjectionOnSegment(current, polyline.getActualPoints(), map.getProjection());
+//                    LatLng curentTest = new LatLng(test.getLatitude(), test.getLongitude());
+//                    isInsideManeuver = ML_PolyUtil.isLocationOnPath(curentTest, latLngInside, true, 7);
+
                     isInsideManeuver = ML_PolyUtil.isLocationOnPath(CurrentLatLng, latLngInside, true, 18);
 
                     if (isInsideManeuver) {//__________________________________if (isInsideManeuver)
                         bearing = (float) GetBearing(latLngInside.get(0), latLngInside.get(1));
                         GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, polyline.getActualPoints(), map.getProjection());
                         CurrentLatLng = new LatLng(car.getLatitude(), car.getLongitude());
-                        IMapController mapController = map.getController();
-                        mapController.animateTo(car, 19.5, Long.valueOf(750), getBearing());
+                        MoveCamera(car, 19.5);
                         LatLng EndPolyLine = latLngInside.get(1);
+                        if (currentPolyLine+1 < drivingRoutes.get(currentStep).getPolylines().size()) {
+                            Polyline polylineNext = drivingRoutes.get(currentStep).getPolylines().get(currentPolyLine+1);
+                            EndPolyLine = new LatLng(polylineNext.getActualPoints().get(0).getLatitude(), polylineNext.getActualPoints().get(0).getLongitude());
+                        } else {
+                            if(currentStep+1 < drivingRoutes.size()) {
+                                Polyline polylineNext;
+                                if (drivingRoutes.get(currentStep+1).getPolylines() != null && drivingRoutes.get(currentStep+1).getPolylines().size() > 0) {
+                                    polylineNext = drivingRoutes.get(currentStep + 1).getPolylines().get(0);
+                                    EndPolyLine = new LatLng(polylineNext.getActualPoints().get(0).getLatitude(), polylineNext.getActualPoints().get(0).getLongitude());
+                                }
+                            }
+                        }
+
                         float Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, EndPolyLine);
-                        if (Distance > 8) {
+                        if (Distance > 6) {
                             int count = drivingRoutes.get(currentStep).getPolylines().size() - 1;
                             EndPolyLine = new LatLng(drivingRoutes.get(currentStep).getPolylines().get(count).getActualPoints().get(1).getLatitude(),
                                     drivingRoutes.get(currentStep).getPolylines().get(count).getActualPoints().get(1).getLongitude());
                             Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, EndPolyLine);
                             CalculateDistance(Distance);
                             String name = drivingRoutes.get(0).getStreetName();
-                            SetRoadName("خیابان فعلی : ", name, TextViewCurrentRoad);
-                            if (drivingRoutes.size() > 1)
+                            SetRoadName("مسیر فعلی : ", name, TextViewCurrentRoad);
+                            if (drivingRoutes.size() > 1) {
                                 name = drivingRoutes.get(1).getStreetName();
-                            else
+                                name = SetImageManeuver(drivingRoutes.get(1).getRouteManeuver(), name);
+                            } else {
                                 name = drivingRoutes.get(0).getStreetName();
-                            SetRoadName("خیابان بعدی : ", name, TextViewNextRoad);
+                                name = SetImageManeuver(drivingRoutes.get(0).getRouteManeuver(), name);
+                            }
+                            SetRoadName("مسیر بعدی : ", name, TextViewNextRoad);
 
                             WhileControl = false;
                             WhilePolyLine = false;
                             break;
                         } else {
-                            map.getOverlays().remove(polyline);
+                            //map.getOverlays().remove(polyline);
+                            polyline.setColor(getResources().getColor(R.color.ML_PolyLineEnd));
+                            //map.getOverlays().add(polyline);
                             drivingRoutes.get(currentStep).getPolylines().remove(polyline);
                             if (drivingRoutes.get(currentStep).getPolylines().size() == 0) {
                                 currentStep = -1;
@@ -701,7 +898,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                         }
 
                     } else {//_________________________________________________if (isInsideManeuver)
-                        map.getOverlays().remove(polyline);
+                        //map.getOverlays().remove(polyline);
+                        polyline.setColor(getResources().getColor(R.color.ML_PolyLineEnd));
+                        //map.getOverlays().add(polyline);
                         drivingRoutes.get(currentStep).getPolylines().remove(polyline);
                         if (drivingRoutes.get(currentStep).getPolylines().size() == 0) {
                             currentStep = -1;
@@ -724,16 +923,32 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 if (!isInsideManeuver)
                     NewRouting();
                 else {
+                    GetDirection = false;
                     map.getOverlays().clear();
-                    map.invalidate();
+                    MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
+                    map.getOverlays().add(OverlayEvents);
                     LinearLayoutManeuver.setVisibility(View.GONE);
-                    IMapController mapController = map.getController();
-                    mapController.animateTo(current, 18.0, Long.valueOf(1000), getBearing());
+                    CarMarker.setVisibility(View.GONE);
+                    MoveCamera(current, 18.0);
                 }
-            } else {
-                if (!isInsideManeuver)
-                    NewRouting();
+            } else if (drivingRoutes.size() == 2){
+                Polyline polylineEnd = drivingRoutes.get(0).getPolylines().get(drivingRoutes.get(0).getPolylines().size()-1);
+                LatLng End = new LatLng(polylineEnd.getActualPoints().get(1).getLatitude(), polylineEnd.getActualPoints().get(1).getLongitude());
+                float Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, End);
+                if (Distance < 15) {
+                    GetDirection = false;
+                    map.getOverlays().clear();
+                    MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
+                    map.getOverlays().add(OverlayEvents);
+                    LinearLayoutManeuver.setVisibility(View.GONE);
+                    CarMarker.setVisibility(View.GONE);
+                    MoveCamera(current, 18.0);
+                }
             }
+//            else {
+//                if (!isInsideManeuver)
+//                    NewRouting();
+//            }
 
 
         } else {//__________________________________________________________________ if GetDirection
@@ -749,8 +964,10 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                     map.getOverlays().add(currentMarker);
                 } else
                     currentMarker.setPosition(current);
-                IMapController mapController = map.getController();
-                mapController.animateTo(current, 18.0, Long.valueOf(1000), getBearing());
+                MoveCamera(current, 18.0);
+            } else {
+                CurrentLocation = loc;
+                CurrentLatLng = new LatLng(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
             }
         }//____________________________________________________________________ else if GetDirection
 

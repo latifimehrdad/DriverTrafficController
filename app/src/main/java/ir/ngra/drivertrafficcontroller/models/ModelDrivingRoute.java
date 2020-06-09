@@ -18,16 +18,16 @@ public class ModelDrivingRoute {
 
     private String StreetName;
 
-    private String StepType;
+    private ModelRouteManeuver RouteManeuver;
 
 
-    public ModelDrivingRoute(List<LatLng> maneuvers, List<Polyline> polylines, float duration, float distance, String streetName, String stepType) {
+    public ModelDrivingRoute(List<LatLng> maneuvers, List<Polyline> polylines, float duration, float distance, String streetName, ModelRouteManeuver routeManeuver) {
         Maneuvers = maneuvers;
         this.polylines = polylines;
         Duration = duration;
         Distance = distance;
         StreetName = streetName;
-        StepType = stepType;
+        RouteManeuver = routeManeuver;
     }
 
     public List<LatLng> getManeuvers() {
@@ -70,11 +70,11 @@ public class ModelDrivingRoute {
         StreetName = streetName;
     }
 
-    public String getStepType() {
-        return StepType;
+    public ModelRouteManeuver getRouteManeuver() {
+        return RouteManeuver;
     }
 
-    public void setStepType(String stepType) {
-        StepType = stepType;
+    public void setRouteManeuver(ModelRouteManeuver routeManeuver) {
+        RouteManeuver = routeManeuver;
     }
 }
