@@ -1,8 +1,7 @@
 package ir.ngra.drivertrafficcontroller.views.fragments;
 
-import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.content.Context;
+import android.graphics.Paint;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,7 +26,6 @@ import androidx.fragment.app.Fragment;
 
 import com.cunoraz.gifview.library.GifView;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
@@ -53,16 +51,13 @@ import ir.ngra.drivertrafficcontroller.daggers.retrofit.RetrofitModule;
 import ir.ngra.drivertrafficcontroller.databinding.FragmentHomeOsmBinding;
 import ir.ngra.drivertrafficcontroller.models.ModelDrivingRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRoute;
-import ir.ngra.drivertrafficcontroller.models.ModelRouteIntersection;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteManeuver;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteStep;
 import ir.ngra.drivertrafficcontroller.models.ModelRoutesSteps;
 import ir.ngra.drivertrafficcontroller.utility.BearingToNorthProvider;
 import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
-import ir.ngra.drivertrafficcontroller.utility.MyUrlTileProvider;
 import ir.ngra.drivertrafficcontroller.utility.StaticFunctions;
 import ir.ngra.drivertrafficcontroller.utility.polyutil.ML_PolyUtil;
-import ir.ngra.drivertrafficcontroller.utility.polyutil.ML_SphericalUtil;
 import ir.ngra.drivertrafficcontroller.viewmodels.fragments.VM_Home;
 
 public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEventListener {
@@ -97,6 +92,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private List<ModelDrivingRoute> drivingRoutes;
     private Marker Real;
     private MapEventsReceiver mReceive;
+    private int ErrorGetDirect;
+    private GeoPoint CurrentCenter;
+
 
 
     @BindView(R.id.BtnMove)
@@ -134,6 +132,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     @BindView(R.id.ImageViewManeuver)
     ImageView ImageViewManeuver;
+
+    @BindView(R.id.TextViewKm)
+    TextView TextViewKm;
 
 
     public HomeOsm() {//____________________________________________________________________________ Home
@@ -175,6 +176,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     private void ConfigFirst() {//__________________________________________________________________ ConfigFirst
 
+        ErrorGetDirect = 0;
         LinearLayoutManeuver.setVisibility(View.GONE);
         RelativeLayoutDirection.setVisibility(View.GONE);
         imageViewRouter.setVisibility(View.VISIBLE);
@@ -185,6 +187,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         AccessToRemoveMarker = true;
         GetDirection = false;
         LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
+        TextViewKm.setText("0");
 
 
         LinearLayoutRouter.setOnClickListener(new View.OnClickListener() {
@@ -227,6 +230,38 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
         GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
         MoveCamera(startPoint,7.0);
+
+
+
+//        Polyline line = new Polyline(map);
+//        line.setTitle("Central Park, NYC");
+//        line.setSubDescription(Polyline.class.getCanonicalName());
+//        line.setWidth(20f);
+//        List<GeoPoint> pts = new ArrayList<>();
+//        //here, we create a polygon, note that you need 5 points in order to make a closed polygon (rectangle)
+//
+//        pts.add(new GeoPoint(35.830031, 50.962803));
+//        pts.add(new GeoPoint(35.829585, 50.962448));
+//        pts.add(new GeoPoint(35.829341, 50.963054));
+//        pts.add(new GeoPoint(35.829793, 50.963403));
+//        line.setPoints(pts);
+//        line.setGeodesic(true);
+//        line.getOutlinePaint().setStrokeWidth(25);
+//        line.getOutlinePaint().setColor(getResources().getColor(R.color.ML_PolyLine));
+//        line.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
+//        line.getOutlinePaint().set
+//        //Note, the info window will not show if you set the onclick listener
+//        //line can also attach click listeners to the line
+//        /*
+//        line.setOnClickListener(new Polyline.OnClickListener() {
+//            @Override
+//            public boolean onClick(Polyline polyline, MapView mapView, GeoPoint eventPos) {
+//                Toast.makeText(context, "Hello world!", Toast.LENGTH_LONG).show();
+//                return false;
+//            }
+//        });*/
+//        map.getOverlayManager().add(line);
+
 
         mBearingProvider = new BearingToNorthProvider(context);
         mBearingProvider.setChangeEventListener(HomeOsm.this);
@@ -308,9 +343,12 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             public void onClick(View v) {
 
                 MapMove = false;
-                GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-                IMapController mapController = map.getController();
-                mapController.animateTo(currentPoint, 19.5, Long.valueOf(1000), getBearing());
+                if (CurrentCenter != null)
+                MoveCamera(CurrentCenter, 19.5);
+                else {
+                    GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+                    MoveCamera(currentPoint, 19.5);
+                }
                 BtnMove.setVisibility(View.INVISIBLE);
                 CarMarker.setVisibility(View.VISIBLE);
 
@@ -406,6 +444,26 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                                         RemoveMarker();
                                         GetDirection = false;
                                         break;
+                                    case "onFailureDirection":
+                                        ErrorGetDirect++;
+                                        if (ErrorGetDirect < 3) {
+                                            RetrofitModule.isCancel = true;
+                                            NewRouting();
+                                        } else {
+                                            RetrofitModule.isCancel = true;
+                                            imageViewRouter.setVisibility(View.VISIBLE);
+                                            GifViewRouter.setVisibility(View.GONE);
+                                            RelativeLayoutDirection.setVisibility(View.GONE);
+                                            if (pointMarket != null) {
+                                                map.getOverlays().remove(pointMarket);
+                                                pointMarket = null;
+                                            }
+                                            AccessToGoneDirectionTrue();
+                                            AccessToRemoveMarker = true;
+                                            RemoveMarker();
+                                            GetDirection = false;
+                                        }
+                                        break;
 
                                 }
                             }
@@ -435,6 +493,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     private void ConfigRoute() {//__________________________________________________________________ Start Void ConfigRoute
 
+        ErrorGetDirect = 0;
         if (currentMarker != null) {
             map.getOverlays().remove(currentMarker);
             currentMarker = null;
@@ -498,8 +557,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
         if (CurrentLatLng != null) {
             GeoPoint current = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-            GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, drivingRoutes.get(0).getPolylines().get(0).getActualPoints(), map.getProjection());
-            MoveCamera(car, 19.5);
+            CurrentCenter = StaticFunctions.getMarkerProjectionOnSegment(current, drivingRoutes.get(0).getPolylines().get(0).getActualPoints(), map.getProjection());
+            MoveCamera(CurrentCenter, 19.5);
         }
 
         Handler handler = new Handler();
@@ -791,6 +850,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         line.addPoint(end);
         line.setColor(getResources().getColor(R.color.ML_PolyLine));
         line.setWidth(40.0f);
+        line.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
         map.getOverlays().add(line);
         return line;
     }//_____________________________________________________________________________________________ DrawPolyLines
@@ -800,6 +860,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     public void onCurrentLocationChange(Location loc) {//___________________________________________ onCurrentLocationChange
 
         //*** New Code
+
+        Integer speed = Math.round(loc.getSpeed());
+        TextViewKm.setText(speed + "");
 
         if (MapMove)
             return;
@@ -843,9 +906,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
                     if (isInsideManeuver) {//__________________________________if (isInsideManeuver)
                         bearing = (float) GetBearing(latLngInside.get(0), latLngInside.get(1));
-                        GeoPoint car = StaticFunctions.getMarkerProjectionOnSegment(current, polyline.getActualPoints(), map.getProjection());
-                        CurrentLatLng = new LatLng(car.getLatitude(), car.getLongitude());
-                        MoveCamera(car, 19.5);
+                        CurrentCenter = StaticFunctions.getMarkerProjectionOnSegment(current, polyline.getActualPoints(), map.getProjection());
+                        CurrentLatLng = new LatLng(CurrentCenter.getLatitude(), CurrentCenter.getLongitude());
+                        MoveCamera(CurrentCenter, 19.5);
                         LatLng EndPolyLine = latLngInside.get(1);
                         if (currentPolyLine+1 < drivingRoutes.get(currentStep).getPolylines().size()) {
                             Polyline polylineNext = drivingRoutes.get(currentStep).getPolylines().get(currentPolyLine+1);

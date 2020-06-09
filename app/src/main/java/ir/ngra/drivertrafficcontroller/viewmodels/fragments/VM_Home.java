@@ -181,14 +181,14 @@ public class VM_Home {
                     public void onResponse(Call<ModelRoute> call, Response<ModelRoute> response) {
                         route = response.body();
                         if (route == null || route.getRoutes() == null || route.getRoutes().size() == 0)
-                            publishSubject.onNext("onFailure");
+                            publishSubject.onNext("onFailureDirection");
                         else
                         publishSubject.onNext("GetDirection");
                     }
 
                     @Override
                     public void onFailure(Call<ModelRoute> call, Throwable t) {
-                        publishSubject.onNext("onFailure");
+                        publishSubject.onNext("onFailureDirection");
                     }
                 });
     }//_____________________________________________________________________________________________ Direction

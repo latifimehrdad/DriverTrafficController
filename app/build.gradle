@@ -81,7 +81,6 @@ dependencies {
     implementation "androidx.navigation:navigation-ui:$nav_version"
 
     implementation 'org.osmdroid:osmdroid-android:6.1.6'
-    implementation 'org.osmdroid:osmdroid-shape:6.1.3'
 
 
 }

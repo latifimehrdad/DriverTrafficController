@@ -21,6 +21,39 @@
 
 
         <LinearLayout
+            android:layout_width="@dimen/_50sdp"
+            android:layout_height="@dimen/_50sdp"
+            android:layout_marginTop="@dimen/_5sdp"
+            android:layout_marginLeft="@dimen/_5sdp"
+            android:background="@drawable/dw_circle_primery_dark"
+            android:padding="@dimen/_5sdp"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                fontPath="font/iransans_web_medium.ttf"
+                android:id="@+id/TextViewKm"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1.3"
+                android:textSize="@dimen/_15sdp"
+                android:textColor="@color/ML_White"
+                android:lines="2"
+                android:gravity="center"/>
+
+            <TextView
+                fontPath="font/iransans_web_medium.ttf"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:textSize="@dimen/_8sdp"
+                android:textColor="@color/ML_White"
+                android:text="KM"
+                android:gravity="center"/>
+
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/LinearLayoutManeuver"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -30,6 +63,7 @@
             android:padding="@dimen/_7sdp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
+            android:layout_alignParentBottom="true"
             >
 
             <ImageView
@@ -52,7 +86,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/ML_Black"
                     android:gravity="center"
-                    android:textSize="@dimen/_12sdp"
+                    android:textSize="@dimen/_15sdp"
                     android:layout_marginTop="@dimen/_2sdp"
                     />
 
@@ -63,7 +97,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/ML_Black"
                     android:gravity="right"
-                    android:textSize="@dimen/_10sdp"
+                    android:textSize="@dimen/_15sdp"
                     android:layout_marginTop="@dimen/_3sdp"
                     />
 
@@ -74,7 +108,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/ML_Black"
                     android:gravity="right"
-                    android:textSize="@dimen/_10sdp"
+                    android:textSize="@dimen/_15sdp"
                     android:layout_marginTop="@dimen/_3sdp"
                     android:layout_marginBottom="@dimen/_2sdp"
                     />
