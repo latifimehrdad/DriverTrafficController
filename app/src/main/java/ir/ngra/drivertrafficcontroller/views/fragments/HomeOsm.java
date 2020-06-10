@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -23,9 +24,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.cunoraz.gifview.library.GifView;
 import com.google.android.gms.maps.model.LatLng;
+import com.jakewharton.rxbinding2.widget.RxTextView;
+import com.jakewharton.rxbinding2.widget.TextViewTextChangeEvent;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
@@ -40,20 +45,26 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 import ir.ngra.drivertrafficcontroller.R;
+import ir.ngra.drivertrafficcontroller.views.adabters.AdabterDestination;
+import ir.ngra.drivertrafficcontroller.views.adabters.AdabterSuggestion;
 import ir.ngra.drivertrafficcontroller.daggers.retrofit.RetrofitModule;
 import ir.ngra.drivertrafficcontroller.databinding.FragmentHomeOsmBinding;
+import ir.ngra.drivertrafficcontroller.models.ModelAdabterSuggestion;
 import ir.ngra.drivertrafficcontroller.models.ModelDrivingRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteManeuver;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteStep;
 import ir.ngra.drivertrafficcontroller.models.ModelRoutesSteps;
+import ir.ngra.drivertrafficcontroller.models.ModelSuggestionAddress;
 import ir.ngra.drivertrafficcontroller.utility.BearingToNorthProvider;
 import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
 import ir.ngra.drivertrafficcontroller.utility.StaticFunctions;
@@ -92,9 +103,49 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private List<ModelDrivingRoute> drivingRoutes;
     private Marker Real;
     private MapEventsReceiver mReceive;
-    private int ErrorGetDirect;
+    //    private int ErrorGetDirect;
+//    private int ErrorGetAddress;
     private GeoPoint CurrentCenter;
 
+
+    private CompositeDisposable compositeDisposable;
+    private AdabterSuggestion adabterSuggestion;
+    private AdabterDestination adabterDestination;
+    private GeoPoint ChooseFromSuggestion;
+    private List<LatLng> LatLngDestination;
+    private List<ModelSuggestionAddress> destinationAddresses;
+    private Integer PositionChooseSuggestion;
+
+
+    @BindView(R.id.TextViewMessage)
+    TextView TextViewMessage;
+
+    @BindView(R.id.LinearLayoutDestination)
+    LinearLayout LinearLayoutDestination;
+
+    @BindView(R.id.RecyclerViewSuggestion)
+    RecyclerView RecyclerViewSuggestion;
+
+    @BindView(R.id.EditTextDestination)
+    EditText EditTextDestination;
+
+    @BindView(R.id.GifViewDestination)
+    GifView GifViewDestination;
+
+    @BindView(R.id.ImageViewCloseSuggestion)
+    ImageView ImageViewCloseSuggestion;
+
+    @BindView(R.id.LinearLayoutChoose)
+    LinearLayout LinearLayoutChoose;
+
+    @BindView(R.id.RelativeLayoutChoose)
+    RelativeLayout RelativeLayoutChoose;
+
+    @BindView(R.id.RecyclerViewDestinations)
+    RecyclerView RecyclerViewDestinations;
+
+    @BindView(R.id.TextViewEndDestination)
+    TextView TextViewEndDestination;
 
 
     @BindView(R.id.BtnMove)
@@ -123,9 +174,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     @BindView(R.id.TextViewManeuverDistance)
     TextView TextViewManeuverDistance;
-
-    @BindView(R.id.TextViewCurrentRoad)
-    TextView TextViewCurrentRoad;
 
     @BindView(R.id.TextViewNextRoad)
     TextView TextViewNextRoad;
@@ -176,19 +224,117 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     private void ConfigFirst() {//__________________________________________________________________ ConfigFirst
 
-        ErrorGetDirect = 0;
+//        ErrorGetDirect = 0;
+//        ErrorGetAddress = 0;
         LinearLayoutManeuver.setVisibility(View.GONE);
         RelativeLayoutDirection.setVisibility(View.GONE);
         imageViewRouter.setVisibility(View.VISIBLE);
         GifViewRouter.setVisibility(View.GONE);
         BtnMove.setVisibility(View.INVISIBLE);
         CarMarker.setVisibility(View.GONE);
+        ImageViewCloseSuggestion.setVisibility(View.GONE);
+        GifViewDestination.setVisibility(View.GONE);
+        LinearLayoutDestination.setVisibility(View.GONE);
+        RecyclerViewSuggestion.setVisibility(View.GONE);
+        LinearLayoutChoose.setVisibility(View.GONE);
+        TextViewMessage.setText(getResources().getString(R.string.WaitForYourLocation));
+        TextViewMessage.setVisibility(View.VISIBLE);
         AccessToGoneDirection = true;
         AccessToRemoveMarker = true;
         GetDirection = false;
         LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
         TextViewKm.setText("0");
+        EditTextDestinationChange();
+        SetClicks();
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mBearingProvider = new BearingToNorthProvider(context);
+                mBearingProvider.setChangeEventListener(HomeOsm.this);
+                mBearingProvider.start();
+            }
+        }, 1000);
 
+
+    }//_____________________________________________________________________________________________ ConfigFirst
+
+
+    private void EditTextDestinationChange() {//____________________________________________________ EditTextDestinationChange
+
+        if (compositeDisposable != null) {
+            compositeDisposable.dispose();
+            compositeDisposable = null;
+        }
+        compositeDisposable = new CompositeDisposable();
+        compositeDisposable.add(RxTextView.textChangeEvents(EditTextDestination)
+                .skipInitialValue()
+                .debounce(3000, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(searchContactsTextWatcher()));
+
+    }//_____________________________________________________________________________________________ EditTextDestinationChange
+
+
+    private DisposableObserver<TextViewTextChangeEvent> searchContactsTextWatcher() {//_____________ Start searchContactsTextWatcher
+        return new DisposableObserver<TextViewTextChangeEvent>() {
+            @Override
+            public void onNext(TextViewTextChangeEvent textViewTextChangeEvent) {
+                if (EditTextDestination.getText().toString().length() == 0)
+                    return;
+                if (RetrofitModule.isCancel) {
+                    GifViewDestination.setVisibility(View.VISIBLE);
+                    ImageViewCloseSuggestion.setVisibility(View.GONE);
+                    vm_home.GetSuggestionAddress(
+                            EditTextDestination.getText().toString(),
+                            false,
+                            ErrorCount);
+                }
+                //publishSubject.onNext(textViewTextChangeEvent.text().toString());
+            }
+
+            @Override
+            public void onError(Throwable e) {
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        };
+    }//_____________________________________________________________________________________________ End searchContactsTextWatcher
+
+
+    private void SetClicks() {//____________________________________________________________________ SetClicks
+
+
+        BtnMove.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                MapMove = false;
+                if (CurrentCenter != null)
+                    MoveCamera(CurrentCenter, 19.5);
+                else {
+                    GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
+                    MoveCamera(currentPoint, 19.5);
+                }
+                BtnMove.setVisibility(View.INVISIBLE);
+                CarMarker.setVisibility(View.VISIBLE);
+                LinearLayoutManeuver.setVisibility(View.VISIBLE);
+
+            }
+        });
+
+
+        EditTextDestination.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                GifViewDestination.setVisibility(View.VISIBLE);
+                return false;
+            }
+        });
 
         LinearLayoutRouter.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -198,8 +344,23 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                     imageViewRouter.setVisibility(View.VISIBLE);
                     GifViewRouter.setVisibility(View.GONE);
                 } else {
+
+                    if (LatLngDestination == null)
+                        LatLngDestination = new ArrayList<>();
+                    else
+                        LatLngDestination.clear();
+
+                    for (ModelSuggestionAddress address : destinationAddresses)
+                        LatLngDestination.add(new LatLng(address.getLat(), address.getLon()));
+
                     imageViewRouter.setVisibility(View.GONE);
                     GifViewRouter.setVisibility(View.VISIBLE);
+                    pointLatLng = LatLngDestination.get(0);
+//                    vm_home.DirectionS(
+//                            CurrentLatLng.latitude,
+//                            CurrentLatLng.longitude,
+//                            LatLngDestination
+//                    );
                     vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
                             pointLatLng.latitude, pointLatLng.longitude);
                 }
@@ -207,13 +368,42 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         });
 
 
-    }//_____________________________________________________________________________________________ ConfigFirst
+        ImageViewCloseSuggestion.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                StaticFunctions.hideKeyboard(getActivity());
+                EditTextDestination.setText("");
+                RecyclerViewSuggestion.setVisibility(View.GONE);
+                ImageViewCloseSuggestion.setVisibility(View.GONE);
+            }
+        });
+
+        RelativeLayoutChoose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                map.getOverlays().clear();
+                LinearLayoutChoose.setVisibility(View.GONE);
+                LinearLayoutDestination.setVisibility(View.VISIBLE);
+                LinearLayoutRouter.setBackgroundResource(R.drawable.button_bg);
+
+                if (destinationAddresses == null)
+                    destinationAddresses = new ArrayList<>();
+
+                destinationAddresses.add(vm_home.getSuggestionAddresses().get(PositionChooseSuggestion));
+                destinationAddresses.get(destinationAddresses.size() - 1).setLat(map.getMapCenter().getLatitude());
+                destinationAddresses.get(destinationAddresses.size() - 1).setLon(map.getMapCenter().getLongitude());
+                destinationAddresses.get(destinationAddresses.size() - 1).setTotalAddress(totalAddress(vm_home.getSuggestionAddresses().get(PositionChooseSuggestion)));
+
+                SetDestinationAdabter();
+            }
+        });
+
+    }//_____________________________________________________________________________________________ SetClicks
 
 
     private void OSMConfig() {//____________________________________________________________________ OSMConfig
 
         currentMarker = null;
-
         Configuration.getInstance().load(context, PreferenceManager.getDefaultSharedPreferences(context));
         map = (MapView) view.findViewById(R.id.map);
         map.setUseDataConnection(true);
@@ -229,8 +419,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         map.getOverlays().add(mRotationGestureOverlay);
 
         GeoPoint startPoint = new GeoPoint(35.830031, 50.962803);
-        MoveCamera(startPoint,7.0);
-
+        MoveCamera(startPoint, 7.0);
 
 
 //        Polyline line = new Polyline(map);
@@ -263,11 +452,6 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 //        map.getOverlayManager().add(line);
 
 
-        mBearingProvider = new BearingToNorthProvider(context);
-        mBearingProvider.setChangeEventListener(HomeOsm.this);
-        mBearingProvider.start();
-
-
         map.setOnHoverListener(new View.OnHoverListener() {
             @Override
             public boolean onHover(View v, MotionEvent event) {
@@ -281,6 +465,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             public boolean onTouch(View v, MotionEvent event) {
 
                 if (GetDirection) {
+                    LinearLayoutManeuver.setVisibility(View.GONE);
                     BtnMove.setVisibility(View.VISIBLE);
                     CarMarker.setVisibility(View.INVISIBLE);
                     MapMove = true;
@@ -324,36 +509,20 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 TextViewAddress.setText("درحال یافتن آدرس، شکیبا باشید ...");
                 RelativeLayoutDirection.setVisibility(View.VISIBLE);
                 LinearLayoutRouter.setBackgroundResource(R.drawable.dw_button_disable);
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (RetrofitModule.isCancel)
-                            vm_home.GetAddress(p.getLatitude(), p.getLongitude());
-                    }
-                }, 500);
+//                Handler handler = new Handler();
+//                handler.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        if (RetrofitModule.isCancel)
+//                            //vm_home.GetAddress(p.getLatitude(), p.getLongitude());
+//                    }
+//                }, 500);
                 return false;
             }
         };
-        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
-        map.getOverlays().add(OverlayEvents);
+//        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
+//        map.getOverlays().add(OverlayEvents);
 
-        BtnMove.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                MapMove = false;
-                if (CurrentCenter != null)
-                MoveCamera(CurrentCenter, 19.5);
-                else {
-                    GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
-                    MoveCamera(currentPoint, 19.5);
-                }
-                BtnMove.setVisibility(View.INVISIBLE);
-                CarMarker.setVisibility(View.VISIBLE);
-
-            }
-        });
 
     }//_____________________________________________________________________________________________ OSMConfig
 
@@ -397,6 +566,62 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                             @Override
                             public void run() {
                                 switch (s) {
+                                    case "GetCurrentAddress":
+                                        TextViewMessage.setVisibility(View.GONE);
+                                        LinearLayoutDestination.setVisibility(View.VISIBLE);
+                                        ErrorCount = 0;
+                                        break;
+                                    case "ReTryGetCurrentAddress":
+                                        ErrorCount++;
+                                        vm_home.GetAddress(
+                                                CurrentLatLng.latitude,
+                                                CurrentLatLng.longitude,
+                                                true,
+                                                ErrorCount
+                                        );
+                                        break;
+                                    case "ReTrySuggestion":
+                                        ErrorCount++;
+                                        GifViewDestination.setVisibility(View.VISIBLE);
+                                        ImageViewCloseSuggestion.setVisibility(View.GONE);
+                                        vm_home.GetSuggestionAddress(
+                                                EditTextDestination.getText().toString(),
+                                                false,
+                                                ErrorCount);
+                                        break;
+                                    case "onFailureSuggestion":
+                                        GifViewDestination.setVisibility(View.GONE);
+                                        ShowDialogMessage("");
+                                        break;
+                                    case "NotFoundSuggestion":
+                                        GifViewDestination.setVisibility(View.GONE);
+                                        ShowDialogMessage("");
+                                        SetSuggestionAdabter(false);
+                                        break;
+                                    case "GetSuggestion":
+                                        SetSuggestionAdabter(true);
+                                        break;
+                                    case "GetDirection":
+                                        imageViewRouter.setVisibility(View.VISIBLE);
+                                        GifViewRouter.setVisibility(View.GONE);
+                                        LinearLayoutDestination.setVisibility(View.GONE);
+                                        RetrofitModule.isCancel = true;
+                                        RelativeLayoutDirection.setVisibility(View.GONE);
+                                        AccessToGoneDirectionTrue();
+                                        AccessToRemoveMarker = false;
+                                        ConfigRoute();
+                                        break;
+                                    case "onFailureAddress":
+                                        TextViewAddress.setText("");
+                                        LinearLayoutRouter.setBackgroundResource(R.drawable.button_bg);
+                                        AccessToGoneDirectionTrue();
+                                        AccessToRemoveMarker = true;
+                                        RetrofitModule.isCancel = true;
+                                        imageViewRouter.setVisibility(View.VISIBLE);
+                                        GifViewRouter.setVisibility(View.GONE);
+                                        LinearLayoutDestination.setVisibility(View.VISIBLE);
+                                        break;
+
                                     case "SendSuccess":
                                         ErrorCount = 0;
                                         break;
@@ -416,20 +641,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                                         AccessToRemoveMarker = true;
                                         AccessToGoneDirectionTrue();
                                         break;
-                                    case "onFailureAddress":
-                                        TextViewAddress.setText("");
-                                        LinearLayoutRouter.setBackgroundResource(R.drawable.button_bg);
-                                        AccessToGoneDirectionTrue();
-                                        AccessToRemoveMarker = true;
-                                        RetrofitModule.isCancel = true;
-                                        break;
-                                    case "GetDirection":
-                                        RetrofitModule.isCancel = true;
-                                        RelativeLayoutDirection.setVisibility(View.GONE);
-                                        AccessToGoneDirectionTrue();
-                                        AccessToRemoveMarker = false;
-                                        ConfigRoute();
-                                        break;
+
                                     case "onFailure":
                                         RetrofitModule.isCancel = true;
                                         imageViewRouter.setVisibility(View.VISIBLE);
@@ -445,8 +657,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                                         GetDirection = false;
                                         break;
                                     case "onFailureDirection":
-                                        ErrorGetDirect++;
-                                        if (ErrorGetDirect < 3) {
+                                        ErrorCount++;
+                                        if (ErrorCount < 3) {
                                             RetrofitModule.isCancel = true;
                                             NewRouting();
                                         } else {
@@ -491,9 +703,125 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     }//_____________________________________________________________________________________________ End ObserverObservable
 
 
+    private void ShowDialogMessage(String Message) {//______________________________________________ ShowDialogMessage
+
+    }//_____________________________________________________________________________________________ ShowDialogMessage
+
+
+    private void SetDestinationAdabter() {//________________________________________________________ SetDestinationAdabter
+        adabterDestination = new AdabterDestination(destinationAddresses, context, HomeOsm.this);
+        RecyclerViewDestinations.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+        RecyclerViewDestinations.setAdapter(adabterDestination);
+    }//_____________________________________________________________________________________________ SetDestinationAdabter
+
+
+    private void SetSuggestionAdabter(boolean LoadMore) {//_________________________________________ SetSuggestionAdabter
+
+        List<ModelAdabterSuggestion> list = new ArrayList<>();
+        for (ModelSuggestionAddress address : vm_home.getSuggestionAddresses()) {
+            String ad = totalAddress(address);
+            list.add(new ModelAdabterSuggestion(ad, false));
+        }
+
+        if (LoadMore) {
+            String loadmore = context.getResources().getString(R.string.LoadMore);
+            list.add(new ModelAdabterSuggestion(loadmore, true));
+        }
+
+        adabterSuggestion = new AdabterSuggestion(list, context, HomeOsm.this);
+        RecyclerViewSuggestion.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+        RecyclerViewSuggestion.setAdapter(adabterSuggestion);
+        RecyclerViewSuggestion.setVisibility(View.VISIBLE);
+        GifViewDestination.setVisibility(View.GONE);
+        ImageViewCloseSuggestion.setVisibility(View.VISIBLE);
+
+    }//_____________________________________________________________________________________________ SetSuggestionAdabter
+
+
+    private String totalAddress(ModelSuggestionAddress address) {//_________________________________ totalAddress
+        String City = address.getAddress().getCity();
+        String Neighbourhood = address.getAddress().getNeighbourhood();
+        String Road = address.getAddress().getRoad();
+        String district = address.getAddress().getDistrict();
+        String suburb = address.getAddress().getSuburb();
+
+        String ad = "";
+        if (City != null && City.length() > 0 && !City.equalsIgnoreCase("null"))
+            ad = City;
+        else
+            ad = district;
+
+        if (suburb != null && suburb.length() > 0 && !suburb.equalsIgnoreCase("null"))
+            ad = ad + " " + suburb;
+
+        if (Neighbourhood != null && Neighbourhood.length() > 0 && !Neighbourhood.equalsIgnoreCase("null"))
+            ad = ad + " " + Neighbourhood;
+
+        if (Road != null && Road.length() > 0 && !Road.equalsIgnoreCase("null"))
+            ad = ad + " " + Road;
+
+        return ad;
+    }//_____________________________________________________________________________________________ totalAddress
+
+
+    public void ChooseAddressFromSuggestion(Integer position) {//___________________________________ ChooseAddressFromSuggestion
+
+        vm_home.GetSuggestionAddress(
+                EditTextDestination.getText().toString(),
+                true,
+                ErrorCount);
+
+    }//_____________________________________________________________________________________________ ChooseAddressFromSuggestion
+
+
+    public void ShowOnMap(Integer position) {//_____________________________________________________ ShowOnMap
+
+        PositionChooseSuggestion = position;
+        Double lat = vm_home.getSuggestionAddresses().get(position).getBoundingbox().get(0);
+        Double lng = vm_home.getSuggestionAddresses().get(position).getBoundingbox().get(2);
+        map.getOverlays().clear();
+        Polyline line = new Polyline(map);
+        lat = vm_home.getSuggestionAddresses().get(position).getBoundingbox().get(0);
+        lng = vm_home.getSuggestionAddresses().get(position).getBoundingbox().get(3);
+        line.addPoint(new GeoPoint(lat, lng));
+        lat = vm_home.getSuggestionAddresses().get(position).getBoundingbox().get(1);
+        lng = vm_home.getSuggestionAddresses().get(position).getBoundingbox().get(2);
+        line.addPoint(new GeoPoint(lat, lng));
+        line.getOutlinePaint().setColor(getResources().getColor(R.color.ML_PolyLineEnd));
+        line.getOutlinePaint().setStrokeMiter(15);
+        line.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
+        map.getOverlays().add(line);
+
+        lat = vm_home.getSuggestionAddresses().get(position).getLat();
+        lng = vm_home.getSuggestionAddresses().get(position).getLon();
+        ChooseFromSuggestion = new GeoPoint(lat, lng);
+        MoveCamera(ChooseFromSuggestion, 18.0);
+
+        EditTextDestination.setText("");
+        RecyclerViewSuggestion.setVisibility(View.GONE);
+        ImageViewCloseSuggestion.setVisibility(View.GONE);
+        StaticFunctions.hideKeyboard(getActivity());
+        LinearLayoutChoose.setVisibility(View.VISIBLE);
+        LinearLayoutDestination.setVisibility(View.GONE);
+//        if (position == vm_home.getSuggestionAddresses().size())
+//            vm_home.GetSuggestionAddress(
+//                    EditTextDestination.getText().toString(),
+//                    true,
+//                    ErrorCount
+//            );
+
+    }//_____________________________________________________________________________________________ ShowOnMap
+
+
+    public void DeleteDestination(Integer position) {//_____________________________________________ DeleteDestination
+        destinationAddresses.remove(destinationAddresses.get(position));
+        SetDestinationAdabter();
+    }//_____________________________________________________________________________________________ DeleteDestination
+
+
     private void ConfigRoute() {//__________________________________________________________________ Start Void ConfigRoute
 
-        ErrorGetDirect = 0;
+        ErrorCount = 0;
         if (currentMarker != null) {
             map.getOverlays().remove(currentMarker);
             currentMarker = null;
@@ -566,15 +894,14 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             @Override
             public void run() {
                 CalculateDistance(drivingRoutes.get(0).getDistance());
-                String name = drivingRoutes.get(0).getStreetName();
-                SetRoadName("مسیر فعلی : ", name, TextViewCurrentRoad);
+                String name = drivingRoutes.get(drivingRoutes.size()-1).getStreetName();
+                SetRoadName(context.getResources().getString(R.string.EndDestination), name, TextViewEndDestination);
 
                 if (drivingRoutes.size() > 1) {
                     name = drivingRoutes.get(1).getStreetName();
                     name = SetImageManeuver(drivingRoutes.get(1).getRouteManeuver(), name);
                     SetRoadName("مسیر بعدی : ", name, TextViewNextRoad);
-                }
-                else {
+                } else {
                     name = drivingRoutes.get(0).getStreetName();
                     name = SetImageManeuver(drivingRoutes.get(0).getRouteManeuver(), name);
                     SetRoadName("مسیر بعدی : ", name, TextViewNextRoad);
@@ -634,7 +961,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     private void MoveCamera(GeoPoint geoPoint, Double zoom) {//_____________________________________ MoveCamera
         IMapController mapController = map.getController();
-        mapController.animateTo(geoPoint, zoom, Long.valueOf(500), getBearing());
+        mapController.animateTo(geoPoint, zoom, Long.valueOf(1500), getBearing());
     }//_____________________________________________________________________________________________ MoveCamera
 
 
@@ -826,6 +1153,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private void NewRouting() {//___________________________________________________________________ NewRouting
         GetDirection = false;
         map.getOverlays().clear();
+        pointLatLng = LatLngDestination.get(0);
         GeoPoint point = new GeoPoint(pointLatLng.latitude, pointLatLng.longitude);
         drivingRoutes = null;
         pointMarket = null;
@@ -838,6 +1166,11 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         RelativeLayoutDirection.setVisibility(View.VISIBLE);
         imageViewRouter.setVisibility(View.GONE);
         GifViewRouter.setVisibility(View.VISIBLE);
+//        vm_home.DirectionS(
+//                CurrentLatLng.latitude,
+//                CurrentLatLng.longitude,
+//                LatLngDestination
+//        );
         vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
                 pointLatLng.latitude, pointLatLng.longitude);
     }//_____________________________________________________________________________________________ NewRouting
@@ -861,8 +1194,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
         //*** New Code
 
-        Integer speed = Math.round(loc.getSpeed());
-        TextViewKm.setText(speed + "");
+        float speed = loc.getSpeed();
+        speed = speed * 3.6f;
+        TextViewKm.setText(Math.round(speed) + "");
 
         if (MapMove)
             return;
@@ -910,13 +1244,13 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                         CurrentLatLng = new LatLng(CurrentCenter.getLatitude(), CurrentCenter.getLongitude());
                         MoveCamera(CurrentCenter, 19.5);
                         LatLng EndPolyLine = latLngInside.get(1);
-                        if (currentPolyLine+1 < drivingRoutes.get(currentStep).getPolylines().size()) {
-                            Polyline polylineNext = drivingRoutes.get(currentStep).getPolylines().get(currentPolyLine+1);
+                        if (currentPolyLine + 1 < drivingRoutes.get(currentStep).getPolylines().size()) {
+                            Polyline polylineNext = drivingRoutes.get(currentStep).getPolylines().get(currentPolyLine + 1);
                             EndPolyLine = new LatLng(polylineNext.getActualPoints().get(0).getLatitude(), polylineNext.getActualPoints().get(0).getLongitude());
                         } else {
-                            if(currentStep+1 < drivingRoutes.size()) {
+                            if (currentStep + 1 < drivingRoutes.size()) {
                                 Polyline polylineNext;
-                                if (drivingRoutes.get(currentStep+1).getPolylines() != null && drivingRoutes.get(currentStep+1).getPolylines().size() > 0) {
+                                if (drivingRoutes.get(currentStep + 1).getPolylines() != null && drivingRoutes.get(currentStep + 1).getPolylines().size() > 0) {
                                     polylineNext = drivingRoutes.get(currentStep + 1).getPolylines().get(0);
                                     EndPolyLine = new LatLng(polylineNext.getActualPoints().get(0).getLatitude(), polylineNext.getActualPoints().get(0).getLongitude());
                                 }
@@ -930,8 +1264,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                                     drivingRoutes.get(currentStep).getPolylines().get(count).getActualPoints().get(1).getLongitude());
                             Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, EndPolyLine);
                             CalculateDistance(Distance);
-                            String name = drivingRoutes.get(0).getStreetName();
-                            SetRoadName("مسیر فعلی : ", name, TextViewCurrentRoad);
+                            String name = drivingRoutes.get(drivingRoutes.size()-1).getStreetName();
+                            SetRoadName(context.getResources().getString(R.string.EndDestination), name, TextViewEndDestination);
                             if (drivingRoutes.size() > 1) {
                                 name = drivingRoutes.get(1).getStreetName();
                                 name = SetImageManeuver(drivingRoutes.get(1).getRouteManeuver(), name);
@@ -986,26 +1320,35 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 if (!isInsideManeuver)
                     NewRouting();
                 else {
-                    GetDirection = false;
-                    map.getOverlays().clear();
-                    MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
-                    map.getOverlays().add(OverlayEvents);
-                    LinearLayoutManeuver.setVisibility(View.GONE);
-                    CarMarker.setVisibility(View.GONE);
-                    MoveCamera(current, 18.0);
+                    if (LatLngDestination.size() > 0) {
+                        NewRouting();
+                    } else {
+                        GetDirection = false;
+                        map.getOverlays().clear();
+                        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
+                        map.getOverlays().add(OverlayEvents);
+                        LinearLayoutManeuver.setVisibility(View.GONE);
+                        CarMarker.setVisibility(View.GONE);
+                        MoveCamera(current, 18.0);
+                    }
                 }
-            } else if (drivingRoutes.size() == 2){
-                Polyline polylineEnd = drivingRoutes.get(0).getPolylines().get(drivingRoutes.get(0).getPolylines().size()-1);
+            } else if (drivingRoutes.size() == 2) {
+                Polyline polylineEnd = drivingRoutes.get(0).getPolylines().get(drivingRoutes.get(0).getPolylines().size() - 1);
                 LatLng End = new LatLng(polylineEnd.getActualPoints().get(1).getLatitude(), polylineEnd.getActualPoints().get(1).getLongitude());
                 float Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, End);
-                if (Distance < 15) {
-                    GetDirection = false;
-                    map.getOverlays().clear();
-                    MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
-                    map.getOverlays().add(OverlayEvents);
-                    LinearLayoutManeuver.setVisibility(View.GONE);
-                    CarMarker.setVisibility(View.GONE);
-                    MoveCamera(current, 18.0);
+                if (Distance < 30) {
+                    LatLngDestination.remove(0);
+                    if (LatLngDestination.size() > 0) {
+                        NewRouting();
+                    } else {
+                        GetDirection = false;
+                        map.getOverlays().clear();
+                        MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
+                        map.getOverlays().add(OverlayEvents);
+                        LinearLayoutManeuver.setVisibility(View.GONE);
+                        CarMarker.setVisibility(View.GONE);
+                        MoveCamera(current, 18.0);
+                    }
                 }
             }
 //            else {
@@ -1019,14 +1362,15 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 CurrentLocation = loc;
                 CurrentLatLng = new LatLng(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
                 GeoPoint current = new GeoPoint(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
-                if (currentMarker == null) {
-                    currentMarker = new Marker(map);
-                    currentMarker.setPosition(current);
-                    currentMarker.setIcon(getResources().getDrawable(R.drawable.navi_marker));
-                    currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                    map.getOverlays().add(currentMarker);
-                } else
-                    currentMarker.setPosition(current);
+                vm_home.GetAddress(CurrentLatLng.latitude, CurrentLatLng.longitude, true, ErrorCount);
+//                if (currentMarker == null) {
+//                    currentMarker = new Marker(map);
+//                    currentMarker.setPosition(current);
+//                    currentMarker.setIcon(getResources().getDrawable(R.drawable.navi_marker));
+//                    currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+//                    map.getOverlays().add(currentMarker);
+//                } else
+//                    currentMarker.setPosition(current);
                 MoveCamera(current, 18.0);
             } else {
                 CurrentLocation = loc;

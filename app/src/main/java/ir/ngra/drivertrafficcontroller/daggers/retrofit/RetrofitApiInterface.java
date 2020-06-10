@@ -1,9 +1,12 @@
 package ir.ngra.drivertrafficcontroller.daggers.retrofit;
 
+import java.util.List;
+
 import ir.ngra.drivertrafficcontroller.models.ModelGetAddress;
 import ir.ngra.drivertrafficcontroller.models.ModelLocations;
 import ir.ngra.drivertrafficcontroller.models.ModelResponcePrimery;
 import ir.ngra.drivertrafficcontroller.models.ModelRoute;
+import ir.ngra.drivertrafficcontroller.models.ModelSuggestionAddress;
 import ir.ngra.drivertrafficcontroller.models.ModelToken;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -78,17 +81,24 @@ public interface RetrofitApiInterface {
     );
 
 
+    //______________________________________________________________________________________________ getAddress
     @GET()
     Call<ModelGetAddress> getAddress(
             @Url String url
     );
 
-
+    //______________________________________________________________________________________________ getRoute
     @GET()
     Call<ModelRoute> getRoute(
             @Url String url
     );
 
+
+    //______________________________________________________________________________________________ getSuggestionAddress
+    @GET()
+    Call<List<ModelSuggestionAddress>> getSuggestionAddress(
+            @Url String url
+    );
 
 
 //    @FormUrlEncoded

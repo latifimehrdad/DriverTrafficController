@@ -1,4 +1,5 @@
 <resources>
+
     <string name="app_name">DriverTrafficController</string>
     <string name="google_maps_key">AIzaSyABztsjXU0e-Y4gFfNqUGEKH6g0nmbLq2I</string>
     <string name="VerifyAccount">تایید حساب کاربری</string>
@@ -14,5 +15,22 @@
     <string name="onFailure">ارتباط با مرکز برقرار نشد</string>
     <string name="Cancel">انصراف</string>
     <string name="ReTryGetSMS">دریافت مجدد\n پیامک</string>
+
+    <string name="EnterYourAddress">آدرس مقصد بعدی</string>
+    <string name="WaitForYourLocation">در حال دریافت موقعیت فعلی شما، شکیبا باشید...</string>
+    <string name="DefaultCity">تهران</string>
+    <string name="LoadMore">موارد بیشتر...</string>
+    <string name="ShowOnMap">نمایش روی نقشه</string>
+    <string name="Choose">انتخاب مقصد</string>
+    <string name="Destination">مقصد</string>
+    <string name="EndDestination"> مقصد : </string>
+
+    <string name="One">اول</string>
+    <string name="Two">دوم</string>
+    <string name="Three">سوم</string>
+    <string name="Four">چهارم</string>
+    <string name="Five">پنجم</string>
+    <string name="Next">بعدی</string>
+
 
 </resources>

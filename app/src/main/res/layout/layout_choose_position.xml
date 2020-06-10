@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/LinearLayoutChoose"
+    android:layout_width="@dimen/_80sdp"
+    android:layout_height="wrap_content"
+    android:layout_above="@id/LinearLayoutCenter"
+    android:layout_centerHorizontal="true"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:id="@+id/RelativeLayoutChoose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/edit_back">
+
+        <TextView
+            fontPath="fonts/iransans_web_medium.ttf"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:gravity="center"
+            android:padding="@dimen/_3sdp"
+            android:text="@string/Choose"
+            android:textColor="@color/colorPrimaryDark"
+            android:textSize="@dimen/_10sdp" />
+
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="@dimen/_1sdp"
+        android:layout_height="@dimen/_30sdp"
+        android:background="@color/ML_Black" />
+
+
+</LinearLayout>

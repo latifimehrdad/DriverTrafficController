@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:custom="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/_5sdp"
+    android:paddingTop="@dimen/_5sdp"
+    android:background="@color/ML_White"
+    android:paddingLeft="@dimen/_10sdp"
+    android:paddingRight="@dimen/_10sdp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        >
+
+        <LinearLayout
+            android:id="@+id/LinearLayoutRouter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/button_bg"
+            android:padding="@dimen/_5sdp"
+            android:gravity="center"
+            >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/ML_White"
+                android:textSize="@dimen/_10sdp"
+                android:text="مسیر یابی"
+                android:padding="@dimen/_3sdp"
+                />
+
+            <ImageView
+                android:id="@+id/imageViewRouter"
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                android:src="@drawable/ic_directions"
+                android:tint="@color/ML_White"
+                />
+
+            <com.cunoraz.gifview.library.GifView
+                android:id="@+id/GifViewRouter"
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                custom:gif="@drawable/loading"
+                android:visibility="gone"
+                />
+
+
+        </LinearLayout>
+
+        <TextView
+            fontPath="font/iransans_web_medium.ttf"
+            android:text="مقصد های خود را اضافه کنید"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ML_Black"
+            android:textSize="@dimen/_10sdp"
+            android:layout_marginLeft="@dimen/_5sdp"
+            />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@color/ML_EditEmptyBorder"
+        android:layout_marginTop="@dimen/_5sdp"
+        />
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/_8sdp"
+        >
+
+        <EditText
+            android:id="@+id/EditTextDestination"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/EnterYourAddress"
+            android:lines="1"
+            android:inputType="textPostalAddress"
+            android:textSize="@dimen/_10sdp"
+            android:background="@drawable/edit_back"
+            android:paddingLeft="@dimen/_23sdp"
+            />
+
+        <com.cunoraz.gifview.library.GifView
+            android:id="@+id/GifViewDestination"
+            android:layout_width="@dimen/_20sdp"
+            android:layout_height="@dimen/_20sdp"
+            custom:gif="@drawable/loading"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/_1sdp"
+            android:visibility="gone"
+            />
+
+        <ImageView
+            android:id="@+id/ImageViewCloseSuggestion"
+            android:layout_width="@dimen/_20sdp"
+            android:layout_height="@dimen/_20sdp"
+            android:src="@drawable/ic_baseline_cancel"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="@dimen/_2sdp"
+            android:tint="@color/ML_Button"
+            />
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/RecyclerViewDestinations"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/ML_White"
+            />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/RecyclerViewSuggestion"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/ML_White"
+            />
+
+    </RelativeLayout>
+
+
+
+</LinearLayout>

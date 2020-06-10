@@ -241,14 +241,14 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                         .zoom(18)                   // Sets the zoom
                         .build();                   // Creates a CameraPosition from the builder
                 mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (RetrofitModule.isCancel)
-                            vm_home.GetAddress(latLng.latitude, latLng.longitude);
-                    }
-                }, 500);
+//                Handler handler = new Handler();
+//                handler.postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        if (RetrofitModule.isCancel)
+//                            vm_home.GetAddress(latLng.latitude, latLng.longitude);
+//                    }
+//                }, 500);
 
             }
         });

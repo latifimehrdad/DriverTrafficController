@@ -13,11 +13,50 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            >
 
-        <org.osmdroid.views.MapView
-            android:id="@+id/map"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent" />
+            <org.osmdroid.views.MapView
+                android:id="@+id/map"
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                />
+
+            <LinearLayout
+                android:id="@+id/LinearLayoutDestination"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1.5"
+                android:orientation="vertical"
+                >
+
+                <include
+                    layout="@layout/layout_destination"/>
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+
+        <TextView
+            fontPath="font/iransans_web_medium.ttf"
+            android:id="@+id/TextViewMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginLeft="@dimen/_20sdp"
+            android:layout_marginRight="@dimen/_20sdp"
+            android:padding="@dimen/_5sdp"
+            android:background="@drawable/dw_button_disable"
+            android:textSize="@dimen/_10sdp"
+            android:gravity="right"
+            android:textColor="@color/ML_Black"
+            />
 
 
         <LinearLayout
@@ -53,6 +92,7 @@
 
         </LinearLayout>
 
+
         <LinearLayout
             android:id="@+id/LinearLayoutManeuver"
             android:layout_width="match_parent"
@@ -64,6 +104,7 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:layout_alignParentBottom="true"
+            android:visibility="invisible"
             >
 
             <ImageView
@@ -91,7 +132,7 @@
                     />
 
                 <TextView
-                    android:id="@+id/TextViewCurrentRoad"
+                    android:id="@+id/TextViewEndDestination"
                     fontPath="font/iransans_web_medium.ttf"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -126,6 +167,7 @@
             android:src="@drawable/navi_marker"
             android:layout_centerVertical="true"
             android:layout_centerHorizontal="true"
+            android:visibility="invisible"
             />
 
 
@@ -138,6 +180,9 @@
             android:layout_centerVertical="true"
             />
 
+
+        <include layout="@layout/layout_choose_position" />
+
         <RelativeLayout
             android:id="@+id/RelativeLayoutDirection"
             android:layout_width="match_parent"
@@ -145,6 +190,7 @@
             android:layout_marginLeft="@dimen/_50sdp"
             android:layout_marginRight="@dimen/_50sdp"
             android:layout_below="@id/LinearLayoutCenter"
+            android:visibility="invisible"
             >
 
             <LinearLayout
@@ -223,16 +269,15 @@
 
         </RelativeLayout>
 
-
-
         <Button
             android:id="@+id/BtnMove"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="حرکت"
+            android:text="ادامه مسیر"
             android:textSize="@dimen/_10sdp"
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
+            android:visibility="invisible"
             android:layout_marginBottom="@dimen/_50sdp"/>
 
 
