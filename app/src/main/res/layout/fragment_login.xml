@@ -36,7 +36,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="@dimen/_30sdp"
                 android:background="@drawable/edit_back"
-                android:inputType="phone"
+                android:inputType="text"
                 android:gravity="center"
                 android:textColor="@color/colorPrimaryDark"
                 android:textSize="@dimen/_12sdp"

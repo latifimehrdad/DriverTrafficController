@@ -19,18 +19,37 @@
             android:orientation="vertical"
             >
 
-            <org.osmdroid.views.MapView
-                android:id="@+id/map"
-                android:layout_width="fill_parent"
+
+            <RelativeLayout
+                android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                />
+                android:layout_weight="1">
+
+                <org.osmdroid.views.MapView
+                    android:id="@+id/map"
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    />
+
+                <LinearLayout
+                    android:id="@+id/LinearLayoutCenterChoose"
+                    android:layout_width="1px"
+                    android:layout_height="1px"
+                    android:layout_centerVertical="true"
+                    android:layout_centerHorizontal="true"
+                    android:orientation="horizontal"/>
+
+                <include layout="@layout/layout_choose_position" />
+
+            </RelativeLayout>
+
+
 
             <LinearLayout
                 android:id="@+id/LinearLayoutDestination"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1.5"
+                android:layout_weight="1"
                 android:orientation="vertical"
                 >
 
@@ -181,7 +200,7 @@
             />
 
 
-        <include layout="@layout/layout_choose_position" />
+
 
         <RelativeLayout
             android:id="@+id/RelativeLayoutDirection"

@@ -16,6 +16,7 @@
     <string name="Cancel">انصراف</string>
     <string name="ReTryGetSMS">دریافت مجدد\n پیامک</string>
 
+    <string name="gpsIsOff">موقعیت مکانی دستگاه شما خاموش است</string>
     <string name="EnterYourAddress">آدرس مقصد بعدی</string>
     <string name="WaitForYourLocation">در حال دریافت موقعیت فعلی شما، شکیبا باشید...</string>
     <string name="DefaultCity">تهران</string>
@@ -24,6 +25,8 @@
     <string name="Choose">انتخاب مقصد</string>
     <string name="Destination">مقصد</string>
     <string name="EndDestination"> مقصد : </string>
+    <string name="NextManeuver"> مسیر بعدی : </string>
+    <string name="RemainingDistance"> مسافت باقیمانده : </string>
 
     <string name="One">اول</string>
     <string name="Two">دوم</string>
