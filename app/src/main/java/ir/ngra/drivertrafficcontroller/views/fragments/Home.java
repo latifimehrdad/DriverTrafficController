@@ -279,8 +279,8 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                 } else {
                     imageViewRouter.setVisibility(View.GONE);
                     GifViewRouter.setVisibility(View.VISIBLE);
-                    vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
-                            pointLatLng.latitude, pointLatLng.longitude);
+//                    vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
+//                            pointLatLng.latitude, pointLatLng.longitude,0);
                 }
             }
         });
@@ -617,8 +617,8 @@ public class Home extends Fragment implements BearingToNorthProvider.ChangeEvent
                 RelativeLayoutDirection.setVisibility(View.VISIBLE);
                 imageViewRouter.setVisibility(View.GONE);
                 GifViewRouter.setVisibility(View.VISIBLE);
-                vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
-                        pointLatLng.latitude, pointLatLng.longitude);
+//                vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
+//                        pointLatLng.latitude, pointLatLng.longitude,0);
             }
 
             for (int i = 0; i < DrivingStep; i++) {

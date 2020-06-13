@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Point;
+import android.location.Location;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.Editable;
@@ -22,6 +23,8 @@ import org.osmdroid.api.IGeoPoint;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.Projection;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import ir.ngra.drivertrafficcontroller.R;
@@ -31,6 +34,28 @@ import retrofit2.Response;
 
 
 public class StaticFunctions {
+
+    public static List<LatLng> sortLocations(List<LatLng> locations, final double myLatitude, final double myLongitude) {
+        Comparator comp = new Comparator<LatLng>() {
+            @Override
+            public int compare(LatLng o, LatLng o2) {
+                float[] result1 = new float[3];
+                android.location.Location.distanceBetween(myLatitude, myLongitude, o.latitude, o.longitude, result1);
+                Float distance1 = result1[0];
+
+                float[] result2 = new float[3];
+                android.location.Location.distanceBetween(myLatitude, myLongitude, o2.latitude, o2.longitude, result2);
+                Float distance2 = result2[0];
+
+                return distance1.compareTo(distance2);
+            }
+        };
+
+
+        Collections.sort(locations, comp);
+        return locations;
+    }
+
 
     public static boolean isLocationEnabled(Context context) {//____________________________________ Start isLocationEnabled
         int locationMode = 0;

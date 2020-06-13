@@ -296,6 +296,7 @@
             android:textSize="@dimen/_10sdp"
             android:layout_centerHorizontal="true"
             android:layout_alignParentBottom="true"
+            android:background="@drawable/button_bg"
             android:visibility="invisible"
             android:layout_marginBottom="@dimen/_50sdp"/>
 

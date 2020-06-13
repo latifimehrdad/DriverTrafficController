@@ -83,5 +83,7 @@ dependencies {
 
     implementation 'org.osmdroid:osmdroid-android:6.1.6'
 
+    implementation 'us.belka:androidtoggleswitch:1.2.2'
+
 
 }

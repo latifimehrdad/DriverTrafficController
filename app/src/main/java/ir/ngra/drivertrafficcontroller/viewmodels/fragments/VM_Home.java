@@ -22,6 +22,7 @@ import ir.ngra.drivertrafficcontroller.models.ModelResponcePrimery;
 import ir.ngra.drivertrafficcontroller.models.ModelRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelSuggestionAddress;
 import ir.ngra.drivertrafficcontroller.utility.DeviceTools;
+import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
 import ir.ngra.drivertrafficcontroller.views.application.TrafficController;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -67,11 +68,11 @@ public class VM_Home {
 
         if (LoadMore) {
             url = url + "&exclude_place_ids=";
-            for (int i = 0; i<suggestionAddresses.size(); i++)
-                if (i == suggestionAddresses.size()-1)
-                    url = url+suggestionAddresses.get(i).getPlace_id();
+            for (int i = 0; i < suggestionAddresses.size(); i++)
+                if (i == suggestionAddresses.size() - 1)
+                    url = url + suggestionAddresses.get(i).getPlace_id();
                 else
-                    url = url+suggestionAddresses.get(i).getPlace_id()+",";
+                    url = url + suggestionAddresses.get(i).getPlace_id() + ",";
         } else
             suggestionAddresses.clear();
 
@@ -279,21 +280,33 @@ public class VM_Home {
     }//_____________________________________________________________________________________________ End SetAddress
 
 
-    public void DirectionS(double CurrentLat, double CurrentLon, List<LatLng> latLngs) {//__________ DirectionS
+    public void DirectionS(
+            double CurrentLat,
+            double CurrentLon,
+            List<LatLng> latLngs,
+            double OldLat,
+            double OldLong) {//__________ DirectionS
 
         RetrofitModule.isCancel = false;
         RetrofitComponent retrofitComponent =
                 TrafficController.getApplication(context)
                         .getRetrofitComponent();
 
+        double oldBearing = GetBearing(
+                new LatLng(OldLat, OldLong),
+                new LatLng(CurrentLat, CurrentLon)
+        );
+
+
         String url = "https://routing.openstreetmap.de/routed-car/route/v1/driving/" + CurrentLon + "," + CurrentLat + ";";
         for (int i = 0; i < latLngs.size(); i++)
-            if (i == latLngs.size() -1)
-                url  = url + latLngs.get(i).longitude + "," + latLngs.get(i).latitude;
+            if (i == latLngs.size() - 1)
+                url = url + latLngs.get(i).longitude + "," + latLngs.get(i).latitude;
             else
-                url  = url + latLngs.get(i).longitude + "," + latLngs.get(i).latitude + ";";
+                url = url + latLngs.get(i).longitude + "," + latLngs.get(i).latitude + ";";
 
         url = url + "?overview=false&geometries=polyline&steps=true&alternatives=true";
+
 
         retrofitComponent.getRetrofitApiInterface()
                 .getRoute(url)
@@ -315,14 +328,37 @@ public class VM_Home {
     }//_____________________________________________________________________________________________ DirectionS
 
 
-    public void Direction(double CurrentLat, double CurrentLon, double lat, double lon) {//_________ Direction
+    public void Direction(
+            double CurrentLat,
+            double CurrentLon,
+            double lat,
+            double lon,
+            double OldLat,
+            double OldLong) {//_____________________________________________________________________ Direction
 
         RetrofitModule.isCancel = false;
         RetrofitComponent retrofitComponent =
                 TrafficController.getApplication(context)
                         .getRetrofitComponent();
 
-        String url = "https://routing.openstreetmap.de/routed-car/route/v1/driving/" + CurrentLon + "," + CurrentLat + ";" + lon + "," + lat + "?overview=false&geometries=polyline&steps=true&alternatives=true";
+        double oldBearing = GetBearing(
+                new LatLng(OldLat, OldLong),
+                new LatLng(CurrentLat, CurrentLon)
+        );
+        double newBearing = GetBearing(
+                new LatLng(CurrentLat, CurrentLon),
+                new LatLng(lat, lon)
+        );
+        double diff = Math.abs(oldBearing - newBearing);
+        if (diff > 180)
+            diff = 360 - diff;
+
+        String url = "https://routing.openstreetmap.de/routed-car/route/v1/driving/" +
+//                OldLong + "," + OldLat + ";" +
+                CurrentLon + "," + CurrentLat + ";" + lon + "," + lat +
+                "?overview=false&geometries=polyline&steps=true&alternatives=true" +
+//                "&radius=" + oldBearing;
+                "&bearings=" + Math.round(oldBearing) + "," + Math.round(90) + ";" + Math.round(newBearing) + "," + Math.round(90);
 
         retrofitComponent.getRetrofitApiInterface()
                 .getRoute(url)
@@ -403,11 +439,28 @@ public class VM_Home {
         } else
             city = context.getString(R.string.DefaultCity);
 
-        city = city.replace("شهرستان " , "");
+        city = city.replace("شهرستان ", "");
 
         return city;
 
     }//_____________________________________________________________________________________________ getCityOfCurrentAddress
+
+
+    public double GetBearing(LatLng from, LatLng to) {//____________________________________________ Start GetBearing
+        double degreesPerRadian = 180.0 / Math.PI;
+        double lat1 = from.latitude * Math.PI / 180.0;
+        double lon1 = from.longitude * Math.PI / 180.0;
+        double lat2 = to.latitude * Math.PI / 180.0;
+        double lon2 = to.longitude * Math.PI / 180.0;
+        double angle = -Math.atan2(Math.sin(lon1 - lon2) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon1 - lon2));
+
+        if (angle < 0.0)
+            angle += Math.PI * 2.0;
+
+        angle = angle * degreesPerRadian;
+
+        return angle;
+    }//_____________________________________________________________________________________________ End GetBearing
 
 
     public String getMessageResponse() {//__________________________________________________________ getMessageResponse

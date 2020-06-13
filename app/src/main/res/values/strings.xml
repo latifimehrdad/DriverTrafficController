@@ -27,6 +27,9 @@
     <string name="EndDestination"> مقصد : </string>
     <string name="NextManeuver"> مسیر بعدی : </string>
     <string name="RemainingDistance"> مسافت باقیمانده : </string>
+    <string name="AddYourDestination">هر تعداد مقصد که دست دارید اضافه کنید</string>
+    <string name="ClosestDestination">نزدیکترین مسیر</string>
+    <string name="ArrangeDestination">ترتیب انتخاب مسیر</string>
 
     <string name="One">اول</string>
     <string name="Two">دوم</string>

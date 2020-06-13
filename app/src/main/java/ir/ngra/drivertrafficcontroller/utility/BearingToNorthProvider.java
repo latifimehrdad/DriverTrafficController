@@ -147,7 +147,7 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
         mSensorManager.registerListener(this, mSensorMagneticField, SensorManager.SENSOR_DELAY_UI);
         mLocationManager = (LocationManager) Mcontext.getSystemService(Mcontext.LOCATION_SERVICE);
         //mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 1, this);
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 1, this);
 
 //        for (final String provider : mLocationManager.getProviders(true)) {
 //            if (LocationManager.GPS_PROVIDER.equals(provider)
