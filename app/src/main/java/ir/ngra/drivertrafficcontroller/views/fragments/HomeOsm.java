@@ -41,7 +41,10 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.Polyline;
+import org.osmdroid.views.overlay.compass.CompassOverlay;
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
+import org.osmdroid.views.overlay.infowindow.BasicInfoWindow;
+import org.osmdroid.views.overlay.infowindow.InfoWindow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +68,6 @@ import ir.ngra.drivertrafficcontroller.models.ModelDrivingRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRoute;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteManeuver;
 import ir.ngra.drivertrafficcontroller.models.ModelRouteStep;
-import ir.ngra.drivertrafficcontroller.models.ModelRoutesSteps;
 import ir.ngra.drivertrafficcontroller.models.ModelSuggestionAddress;
 import ir.ngra.drivertrafficcontroller.utility.BearingToNorthProvider;
 import ir.ngra.drivertrafficcontroller.utility.MehrdadLatifiMap;
@@ -114,6 +116,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     private List<ModelSuggestionAddress> destinationAddresses;
     private Integer PositionChooseSuggestion;
     private float totalDistance;
+    private CompassOverlay mCompassOverlay;
 
 
     @BindView(R.id.TextViewMessage)
@@ -149,9 +152,15 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     @BindView(R.id.ToggleSwitchDestination)
     ToggleSwitch ToggleSwitchDestination;
 
+    @BindView(R.id.BtnFinishTravel)
+    Button BtnFinishTravel;
+
 
     @BindView(R.id.BtnMove)
     Button BtnMove;
+
+    @BindView(R.id.LinearLayoutAction)
+    LinearLayout LinearLayoutAction;
 
     @BindView(R.id.RelativeLayoutDirection)
     RelativeLayout RelativeLayoutDirection;
@@ -174,8 +183,11 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     @BindView(R.id.LinearLayoutManeuver)
     LinearLayout LinearLayoutManeuver;
 
-    @BindView(R.id.TextViewManeuverDistance)
-    TextView TextViewManeuverDistance;
+    @BindView(R.id.LinearLayoutManeuverImage)
+    LinearLayout LinearLayoutManeuverImage;
+
+    @BindView(R.id.TextViewTotalDistance)
+    TextView TextViewTotalDistance;
 
     @BindView(R.id.TextViewNextRoad)
     TextView TextViewNextRoad;
@@ -185,6 +197,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     @BindView(R.id.TextViewKm)
     TextView TextViewKm;
+
+    @BindView(R.id.TextViewManeuverDistance)
+    TextView TextViewManeuverDistance;
 
 
     public HomeOsm() {//____________________________________________________________________________ Home
@@ -235,8 +250,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         RelativeLayoutDirection.setVisibility(View.GONE);
         imageViewRouter.setVisibility(View.VISIBLE);
         GifViewRouter.setVisibility(View.GONE);
-        BtnMove.setVisibility(View.INVISIBLE);
+        LinearLayoutAction.setVisibility(View.INVISIBLE);
         CarMarker.setVisibility(View.GONE);
+        LinearLayoutManeuverImage.setVisibility(View.GONE);
         ImageViewCloseSuggestion.setVisibility(View.GONE);
         GifViewDestination.setVisibility(View.GONE);
         LinearLayoutDestination.setVisibility(View.GONE);
@@ -313,6 +329,13 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     private void SetClicks() {//____________________________________________________________________ SetClicks
 
+        BtnFinishTravel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+             FinishTravel();
+            }
+        });
+
 
         BtnMove.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -325,8 +348,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 //                    GeoPoint currentPoint = new GeoPoint(CurrentLatLng.latitude, CurrentLatLng.longitude);
 //                    MoveCamera(currentPoint, 19.5,Long.valueOf(1000));
 //                }
-                BtnMove.setVisibility(View.INVISIBLE);
+                LinearLayoutAction.setVisibility(View.INVISIBLE);
                 CarMarker.setVisibility(View.VISIBLE);
+                LinearLayoutManeuverImage.setVisibility(View.VISIBLE);
                 LinearLayoutManeuver.setVisibility(View.VISIBLE);
                 Driving(CurrentLocation);
             }
@@ -378,8 +402,11 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                     }
 
                     pointLatLng = LatLngDestination.get(0);
-                    vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
-                            pointLatLng.latitude, pointLatLng.longitude, OldLocation.getLatitude(), OldLocation.getLongitude());
+                    vm_home.Direction(
+                            CurrentLatLng.latitude, CurrentLatLng.longitude,
+                            pointLatLng.latitude, pointLatLng.longitude,
+                            OldLocation.getLatitude(), OldLocation.getLongitude(),
+                            NewBearing);
 
                 }
             }
@@ -431,7 +458,10 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
         map.setBuiltInZoomControls(false);
         map.setMultiTouchControls(true);
         map.setMinZoomLevel(10.0);
+
         map.onResume();
+
+
 
         RotationGestureOverlay mRotationGestureOverlay = new RotationGestureOverlay(context, map);
         mRotationGestureOverlay.setEnabled(true);
@@ -486,8 +516,9 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
                 if (GetDirection) {
                     LinearLayoutManeuver.setVisibility(View.GONE);
-                    BtnMove.setVisibility(View.VISIBLE);
+                    LinearLayoutAction.setVisibility(View.VISIBLE);
                     CarMarker.setVisibility(View.INVISIBLE);
+                    LinearLayoutManeuverImage.setVisibility(View.INVISIBLE);
                     MapMove = true;
                     return false;
                 }
@@ -686,6 +717,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                                             imageViewRouter.setVisibility(View.VISIBLE);
                                             GifViewRouter.setVisibility(View.GONE);
                                             RelativeLayoutDirection.setVisibility(View.GONE);
+                                            SetDestinationAdabter();
+                                            LinearLayoutDestination.setVisibility(View.VISIBLE);
                                             if (pointMarket != null) {
                                                 map.getOverlays().remove(pointMarket);
                                                 pointMarket = null;
@@ -854,7 +887,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             currentMarker = null;
         }
         CarMarker.setVisibility(View.VISIBLE);
-        BtnMove.setVisibility(View.INVISIBLE);
+        LinearLayoutManeuverImage.setVisibility(View.VISIBLE);
+        LinearLayoutAction.setVisibility(View.INVISIBLE);
         MapMove = false;
         DrivingStep = 0;
         NewBearing = 0;
@@ -902,7 +936,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                     StartPoint = new GeoPoint(latLng.get(i).latitude, latLng.get(i).longitude);
                     EndPoint = new GeoPoint(latLng.get(i + 1).latitude, latLng.get(i + 1).longitude);
                     distance = distance + MehrdadLatifiMap.MeasureDistance(latLng.get(i), latLng.get(i + 1));
-                    polylines.add(DrawPolyLines(StartPoint, EndPoint));
+                    polylines.add(DrawPolyLines(StartPoint, EndPoint,streetName));
                 }
 
                 totalDistance = totalDistance + distance;
@@ -924,9 +958,10 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             @Override
             public void run() {
                 //CalculateDistance(drivingRoutes.get(0).getDistance());
-                CalculateDistance(0);
+                CalculateTotalDistance(0);
                 String name = drivingRoutes.get(drivingRoutes.size() - 1).getStreetName();
                 SetRoadName(context.getResources().getString(R.string.EndDestination), name, TextViewEndDestination);
+                CalculateManeuverDistance(drivingRoutes.get(0).getDistance());
 
                 if (drivingRoutes.size() > 1) {
                     name = drivingRoutes.get(1).getStreetName();
@@ -942,7 +977,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 LinearLayoutManeuver.setVisibility(View.VISIBLE);
                 GetDirection = true;
             }
-        }, 1000);
+        }, 500);
 
         //*** New Code
 
@@ -996,7 +1031,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
     }//_____________________________________________________________________________________________ MoveCamera
 
 
-    private void CalculateDistance(float Distance) {//______________________________________________ CalculateDistance
+    private void CalculateTotalDistance(float Distance) {//_________________________________________ CalculateTotalDistance
         String message;
         totalDistance = totalDistance - Distance;
         Integer DistanceMeter = Math.round(totalDistance);
@@ -1009,8 +1044,28 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             message = context.getResources().getString(R.string.RemainingDistance) + DistanceKm + "." + DistanceMeter + " کیلومتر ";
         else
             message = context.getResources().getString(R.string.RemainingDistance) + DistanceMeter + " متر ";
+        TextViewTotalDistance.setText(message);
+    }//_____________________________________________________________________________________________ CalculateTotalDistance
+
+
+
+
+    private void CalculateManeuverDistance(float Distance) {//______________________________________ CalculateManeuverDistance
+        String message;
+        Integer DistanceMeter = 0;
+        Integer DistanceKm = 0;
+        if (Distance > 999.9) {
+            DistanceKm = Math.round(Distance / 1000);
+            DistanceMeter = Math.round(Distance % 1000);
+        }
+        if (DistanceKm > 0)
+            message = context.getResources().getString(R.string.RemainingDistance) + DistanceKm + "." + DistanceMeter + " کیلومتر ";
+        else
+            message = context.getResources().getString(R.string.RemainingDistance) + Math.round(Distance) + " متر ";
         TextViewManeuverDistance.setText(message);
-    }//_____________________________________________________________________________________________ CalculateDistance
+    }//_____________________________________________________________________________________________ CalculateManeuverDistance
+
+
 
 
     private void SetRoadName(String before, String Name, TextView textView) {//_____________________ SetRoadName
@@ -1207,31 +1262,51 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 //                new LatLng(OldLocation.getLatitude(),OldLocation.getLongitude()),
 //                new LatLng(CurrentLocation.getLatitude(), CurrentLocation.getLongitude())
 //        );
-        vm_home.Direction(CurrentLatLng.latitude, CurrentLatLng.longitude,
-                pointLatLng.latitude, pointLatLng.longitude, OldLocation.getLatitude(), OldLocation.getLongitude());
+        vm_home.Direction(
+                CurrentLatLng.latitude, CurrentLatLng.longitude,
+                pointLatLng.latitude, pointLatLng.longitude,
+                OldLocation.getLatitude(), OldLocation.getLongitude(),
+                NewBearing);
     }//_____________________________________________________________________________________________ NewRouting
 
 
-    private Polyline DrawPolyLines(GeoPoint start, GeoPoint end) {//________________________________ DrawPolyLines
+    private Polyline DrawPolyLines(GeoPoint start, GeoPoint end, String Name) {//___________________ DrawPolyLines
+
+        InfoWindow infoWindow = new InfoWindow(R.layout.layout_info_windows, map) {
+            @Override
+            public void onOpen(Object item) {
+                TextView TextViewInfo = mView.findViewById(R.id.TextViewInfo);
+                TextViewInfo.setText(Name);
+            }
+
+            @Override
+            public void onClose() {
+
+            }
+        };
+
         Polyline line = new Polyline(map);
         line.setGeodesic(true);
         line.addPoint(start);
         line.addPoint(end);
         line.setColor(getResources().getColor(R.color.ML_PolyLine));
-        line.setWidth(40.0f);
+        line.setWidth(25.0f);
         line.getOutlinePaint().setStrokeCap(Paint.Cap.ROUND);
+        line.setInfoWindow(infoWindow);
         map.getOverlays().add(line);
         return line;
     }//_____________________________________________________________________________________________ DrawPolyLines
 
 
-    private void EndDirection() {//_________________________________________________________________ EndDirection
+    private void FinishTravel() {//_________________________________________________________________ EndDirection
         GetDirection = false;
+        LinearLayoutAction.setVisibility(View.GONE);
         map.getOverlays().clear();
         MapEventsOverlay OverlayEvents = new MapEventsOverlay(mReceive);
         map.getOverlays().add(OverlayEvents);
         LinearLayoutManeuver.setVisibility(View.GONE);
         CarMarker.setVisibility(View.GONE);
+        LinearLayoutManeuverImage.setVisibility(View.GONE);
         MoveCamera(CurrentCenter, 18.0, Long.valueOf(1000));
         destinationAddresses.clear();
         LatLngDestination.clear();
@@ -1257,7 +1332,10 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
             );
 //                            Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, EndPolyLine);
 //                            Distance = drivingRoutes.get(currentStep).getDistance() - Distance;
-            CalculateDistance(distance);
+            CalculateTotalDistance(distance);
+
+
+
             boolean isInsideManeuver = false;
             boolean WhileControl = true;
             int currentStep = -1;
@@ -1278,6 +1356,13 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 currentStep++;
                 WhilePolyLine = true;
                 currentPolyLine = -1;
+
+                GeoPoint endStep = drivingRoutes.get(currentStep).getPolylines().get(drivingRoutes.get(currentStep).getPolylines().size()-1).getActualPoints().get(1);
+                distance = MehrdadLatifiMap.MeasureDistance(
+                        CurrentLatLng ,
+                        new LatLng(endStep.getLatitude(), endStep.getLongitude())
+                );
+                CalculateManeuverDistance(distance);
 
                 while (WhilePolyLine) {
                     currentPolyLine++;
@@ -1326,7 +1411,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                         }
 
                         float Distance = MehrdadLatifiMap.MeasureDistance(CurrentLatLng, EndPolyLine);
-                        if (Distance > 6) {
+                        if (Distance > 6.5) {
 
                             String name = drivingRoutes.get(drivingRoutes.size() - 1).getStreetName();
                             SetRoadName(context.getResources().getString(R.string.EndDestination), name, TextViewEndDestination);
@@ -1385,7 +1470,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                     if (LatLngDestination.size() > 0) {
                         NewRouting();
                     } else {
-                        EndDirection();
+                        FinishTravel();
                     }
                 }
             } else if (drivingRoutes.size() == 2) {
@@ -1397,7 +1482,7 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                     if (LatLngDestination.size() > 0) {
                         NewRouting();
                     } else {
-                        EndDirection();
+                        FinishTravel();
                     }
                 }
             }
@@ -1414,15 +1499,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
                 CurrentLatLng = new LatLng(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
                 GeoPoint current = new GeoPoint(CurrentLocation.getLatitude(), CurrentLocation.getLongitude());
                 vm_home.GetAddress(CurrentLatLng.latitude, CurrentLatLng.longitude, true, ErrorCount);
-//                if (currentMarker == null) {
-//                    currentMarker = new Marker(map);
-//                    currentMarker.setPosition(current);
-//                    currentMarker.setIcon(getResources().getDrawable(R.drawable.navi_marker));
-//                    currentMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-//                    map.getOverlays().add(currentMarker);
-//                } else
-//                    currentMarker.setPosition(current);
-                MoveCamera(CurrentCenter, 18.0, Long.valueOf(1000));
+                MoveCamera(current, 18.0, Long.valueOf(1000));
+
             } else {
                 OldLocation = CurrentLocation;
                 CurrentLocation = loc;
@@ -1647,6 +1725,8 @@ public class HomeOsm extends Fragment implements BearingToNorthProvider.ChangeEv
 
     @Override
     public void onBearingChanged(double bearing) {
+        NewBearing = bearing;
+        Log.i("meri" , "bearing : " + NewBearing);
         //OldBearing = bearing;
     }
 

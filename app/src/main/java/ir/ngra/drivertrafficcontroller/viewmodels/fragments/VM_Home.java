@@ -334,7 +334,8 @@ public class VM_Home {
             double lat,
             double lon,
             double OldLat,
-            double OldLong) {//_____________________________________________________________________ Direction
+            double OldLong,
+            double bearing) {//_____________________________________________________________________ Direction
 
         RetrofitModule.isCancel = false;
         RetrofitComponent retrofitComponent =
@@ -345,20 +346,27 @@ public class VM_Home {
                 new LatLng(OldLat, OldLong),
                 new LatLng(CurrentLat, CurrentLon)
         );
+
+        if (OldLat == CurrentLat && OldLong == CurrentLon) {
+            oldBearing = GetBearing(
+                    new LatLng(OldLat, OldLong),
+                    new LatLng(lat, lon)
+            );
+        }
+
         double newBearing = GetBearing(
-                new LatLng(CurrentLat, CurrentLon),
-                new LatLng(lat, lon)
+                new LatLng(lat, lon),
+                new LatLng(CurrentLat, CurrentLon)
         );
-        double diff = Math.abs(oldBearing - newBearing);
-        if (diff > 180)
-            diff = 360 - diff;
+
+
 
         String url = "https://routing.openstreetmap.de/routed-car/route/v1/driving/" +
 //                OldLong + "," + OldLat + ";" +
                 CurrentLon + "," + CurrentLat + ";" + lon + "," + lat +
                 "?overview=false&geometries=polyline&steps=true&alternatives=true" +
 //                "&radius=" + oldBearing;
-                "&bearings=" + Math.round(oldBearing) + "," + Math.round(90) + ";" + Math.round(newBearing) + "," + Math.round(90);
+                "&bearings=" + Math.round(oldBearing) + "," + Math.round(90) + ";" + Math.round(newBearing) + "," + Math.round(180);
 
         retrofitComponent.getRetrofitApiInterface()
                 .getRoute(url)

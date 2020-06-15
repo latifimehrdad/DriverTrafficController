@@ -1,5 +1,4 @@
 package ir.ngra.drivertrafficcontroller.utility;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.hardware.GeomagneticField;
@@ -12,8 +11,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
-
-import com.google.android.gms.maps.model.LatLng;
 
 import ir.ngra.drivertrafficcontroller.utility.polyutil.AverageAngle;
 
@@ -37,8 +34,6 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
     private Sensor mSensorAccelerometer;
     private Sensor mSensorMagneticField;
     private Context Mcontext;
-    private final int TWO_MINUTES = 1000 * 60 * 2;
-    private Location previousBestLocation = null;
 
     // some arrays holding intermediate values read from the sensors, used to calculate our azimuth
     // value
@@ -114,7 +109,6 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
      */
     public BearingToNorthProvider(Context context, int smoothing, double minDiffForEvent, int throttleTime)
     {
-
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         mSensorAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mLocationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
@@ -143,11 +137,11 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
     @SuppressLint("MissingPermission")
     public void start()
     {
-        mSensorManager.registerListener(this, mSensorAccelerometer, SensorManager.SENSOR_DELAY_UI);
-        mSensorManager.registerListener(this, mSensorMagneticField, SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(this, mSensorAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(this, mSensorMagneticField, SensorManager.SENSOR_DELAY_NORMAL);
         mLocationManager = (LocationManager) Mcontext.getSystemService(Mcontext.LOCATION_SERVICE);
-        //mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 1, this);
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 1, this);
+//        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 1, this);
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 1, this);
 
 //        for (final String provider : mLocationManager.getProviders(true)) {
 //            if (LocationManager.GPS_PROVIDER.equals(provider)
@@ -224,28 +218,6 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
             mAzimuth = Math.toDegrees(mAzimuthRadians.getAverage());
         }
 
-//        if (event.sensor == this.accelerometer) {
-//            System.arraycopy(event.values, 0, this.lastAccelerometer, 0, event.values.length);
-//            this.lastAccelerometerSet = true;
-//        } else if (event.sensor == this.magnetometer) {
-//            System.arraycopy(event.values, 0, this.lastMagnetometer, 0, event.values.length);
-//            this.lastMagnetometerSet = true;
-//        }
-//
-//        if (this.lastAccelerometerSet && this.lastAccelerometerSet) {
-//            SensorManager.getRotationMatrix(this.rotationMatrix,null, this.lastAccelerometer, this.lastMagnetometer);
-//            SensorManager.getOrientation(this.rotationMatrix, this.orientation);
-//
-//
-//            float azimuthInRadiands = this.orientation[0];
-//
-//            // this is now the heading of the phone. If you want
-//            // to rotate a view to north don´t forget that you have
-//            // to rotate by the negative value.
-//            float azimuthInDegrees = (float) Math.toDegrees(azimuthInRadiands);
-//            mChangeEventListener.onBearingChanged(azimuthInDegrees);
-//        }
-
         // update mBearing
         updateBearing();
     }
@@ -261,16 +233,15 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
     public void onLocationChanged(Location location)
     {
         // set the new location
-        if (isBetterLocation(location, previousBestLocation)) {
-            previousBestLocation = location;
-//            if (location.getProvider().equalsIgnoreCase("network"))
-//                return;
-            mChangeEventListener.onCurrentLocationChange(location);
-            this.mLocation = location;
-            // update mBearing
-//            updateBearing();
-        }
+//        Log.i("meri" , location.getProvider());
+        if (location.getProvider().equalsIgnoreCase("network"))
+            return;
 
+        mChangeEventListener.onCurrentLocationChange(location);
+        this.mLocation = location;
+
+        // update mBearing
+        updateBearing();
     }
 
     @Override
@@ -300,6 +271,7 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
             if( System.currentTimeMillis() - mLastChangeDispatchedAt > mThrottleTime &&
                     (Double.isNaN(mLastBearing) || Math.abs(mLastBearing - mBearing) >= mMinDiffForEvent)) {
                 mLastBearing = mBearing;
+//                Log.i("meri" , "mBearing : " + mBearing);
                 if(mChangeEventListener != null) {
                     mChangeEventListener.onBearingChanged(mBearing);
                 }
@@ -322,58 +294,4 @@ public class BearingToNorthProvider implements SensorEventListener, LocationList
                 System.currentTimeMillis());
         return geomagneticField;
     }
-
-
-
-
-    protected boolean isBetterLocation(Location location, Location currentBestLocation) {//_________ isBetterLocation
-        if (currentBestLocation == null) {
-            // A new location is always better than no location
-            return true;
-        }
-
-        // Check whether the new location fix is newer or older
-        long timeDelta = location.getTime() - currentBestLocation.getTime();
-        boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
-        boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
-        boolean isNewer = timeDelta > 0;
-
-        // If it's been more than two minutes since the current location, use the new location
-        // because the user has likely moved
-        if (isSignificantlyNewer) {
-            return true;
-            // If the new location is more than two minutes older, it must be worse
-        } else if (isSignificantlyOlder) {
-            return false;
-        }
-
-        // Check whether the new location fix is more or less accurate
-        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
-        boolean isLessAccurate = accuracyDelta > 0;
-        boolean isMoreAccurate = accuracyDelta < 0;
-        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
-
-        // Check if the old and new location are from the same provider
-        boolean isFromSameProvider = isSameProvider(location.getProvider(),
-                currentBestLocation.getProvider());
-
-        // Determine location quality using a combination of timeliness and accuracy
-        if (isMoreAccurate) {
-            return true;
-        } else if (isNewer && !isLessAccurate) {
-            return true;
-        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
-            return true;
-        }
-        return false;
-    }//_____________________________________________________________________________________________ isBetterLocation
-
-
-    private boolean isSameProvider(String provider1, String provider2) {//__________________________ isSameProvider
-        if (provider1 == null) {
-            return provider2 == null;
-        }
-        return provider1.equals(provider2);
-    }//_____________________________________________________________________________________________ isSameProvider
-
 }

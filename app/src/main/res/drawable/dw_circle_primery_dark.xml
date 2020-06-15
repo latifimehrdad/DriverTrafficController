@@ -3,6 +3,6 @@
     android:shape="oval">
 
     <solid android:color="@color/colorPrimaryDark"/>
-    <stroke android:color="@color/ML_PolyLineEnd" android:width="3dp"/>
+    <stroke android:color="@color/ML_White" android:width="@dimen/_2sdp"/>
 
 </shape>
